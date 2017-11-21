@@ -6,7 +6,10 @@ cbuffer ExternalData : register(b0) {
 	float roughness;
 	float ao;
 
-	float3 lightPos;
+	float3 lightPos1;
+	float3 lightPos2;
+	float3 lightPos3;
+	float3 lightPos4;
 	float3 lightCol;
 
 	float3 camPos;
@@ -60,19 +63,10 @@ cbuffer ExternalData : register(b0) {
 //	return (F0 + (1.0f - F0) * pow(1.0 - cosTheta, 5.0f));
 //}
 
-float4 main(VertexToPixel input) : SV_TARGET
+void CalcRadiance(VertexToPixel input, float3 viewDir, float3 normalVec, float3 lightPos, float3 lightCol, float3 F0, out float3 rad)
 {
 	static const float PI = 3.14159265359;
 
-	float3 viewDir = normalize(camPos - input.worldPos);
-	float3 normalVec = normalize(input.normal);
-
-	float3 F0 = float3(0.04f, 0.04f, 0.04f);
-	F0 = lerp(F0, albedo, metallic);
-
-	//reflectance equation
-	float3 Lo = float3(0.0f, 0.0f, 0.0f);
-	
 	//calculate light radiance
 	float3 lightDir = normalize(lightPos - input.worldPos);
 	float3 halfwayVec = normalize(viewDir + lightDir);
@@ -95,8 +89,34 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	//Add to outgoing radiance Lo
 	float NdotL = max(dot(normalVec, lightDir), 0.0f);
-	Lo += (((kD * albedo / PI) + specular) * radiance * NdotL);
+	rad = (((kD * albedo / PI) + specular) * radiance * NdotL);
+}
 
+float4 main(VertexToPixel input) : SV_TARGET
+{
+	//static const float PI = 3.14159265359;
+
+	float3 viewDir = normalize(camPos - input.worldPos);
+	float3 normalVec = normalize(input.normal);
+
+	float3 F0 = float3(0.04f, 0.04f, 0.04f);
+	F0 = lerp(F0, albedo, metallic);
+
+	float3 rad = float3(0.0f, 0.0f, 0.0f);
+	//reflectance equation
+	float3 Lo = float3(0.0f, 0.0f, 0.0f);
+
+	CalcRadiance(input, viewDir, normalVec, lightPos1, lightCol, F0, rad);
+	Lo += rad;
+
+	CalcRadiance(input, viewDir, normalVec, lightPos2, lightCol, F0, rad);
+	Lo += rad;
+
+	CalcRadiance(input, viewDir, normalVec, lightPos3, lightCol, F0, rad);
+	Lo += rad;
+
+	CalcRadiance(input, viewDir, normalVec, lightPos4, lightCol, F0, rad);
+	Lo += rad;
 
 	float3 ambient = float3(0.03f, 0.03f, 0.03f) * albedo * ao;
 	float3 color = ambient + Lo;
