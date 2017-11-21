@@ -38,6 +38,8 @@ Game::~Game()
 	delete baseVertexShader;
 	delete skyVertexShader;
 	delete skyPixelShader;
+	delete PBRVertexShader;
+	delete PBRPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
@@ -53,7 +55,13 @@ Game::~Game()
 	delete skyBoxEntity;
 	for(auto& se: sphereEntities) delete se;
 	for (auto& fe : flatEntities) delete fe;
-	
+	delete pbrSphere;
+	for (size_t i = 0; i < 11; i++)
+		for (size_t j = 0; j < 11; j++)
+		{
+			delete pbrSpheres[i][j];
+		}
+
 	rasterizer->Release();
 
 	skyDepthState->Release();
@@ -132,7 +140,7 @@ void Game::Init()
 
 void Game::CameraInitialize()
 {
-	camera = new Camera(0, 0, -4);
+	camera = new Camera(0.0f, 0.0f, -14.0f);
 	camera->UpdateProjectionMatrix((float)width / height);
 }
 
@@ -153,6 +161,14 @@ void Game::ShadersInitialize()
 	skyPixelShader = new SimplePixelShader(device, context);
 	if (!skyPixelShader->LoadShaderFile(L"Debug/SkyBoxPixelShader.cso"))
 		skyPixelShader->LoadShaderFile(L"SkyBoxPixelShader.cso");
+
+	PBRVertexShader = new SimpleVertexShader(device, context);
+	if (!PBRVertexShader->LoadShaderFile(L"Debug/PBRVertexShader.cso"))
+		PBRVertexShader->LoadShaderFile(L"PBRVertexShader.cso");
+
+	PBRPixelShader = new SimplePixelShader(device, context);
+	if (!PBRPixelShader->LoadShaderFile(L"Debug/PBRPixelShader.cso"))
+		PBRPixelShader->LoadShaderFile(L"PBRPixelShader.cso");
 }
 
 void Game::ModelsInitialize()
@@ -273,6 +289,30 @@ void Game::GameEntityInitialize()
 	flatEntities[1]->SetRotation(0, 0, -1.6f);
 	flatEntities[2]->SetRotation(1.6f, 0, 0);
 	flatEntities[3]->SetRotation(0, 0, 1.6f);
+
+	pbrSphere = new GameEntity(sphereMesh);
+
+	for (size_t i = 0; i < 11; i++)
+		for (size_t j = 0; j < 11; j++)
+		{
+			pbrSpheres[i][j] = new GameEntity(sphereMesh);
+		}
+
+	float x = -6.0f; float y = 6.0f;
+	for (size_t i = 0; i < 11; i++)
+	{
+		if (y == -5.0f)
+			y = 6.0f;
+		for (size_t j = 0; j < 11; j++)
+		{
+			if (x == 5.0f)
+				x = -6.0f;
+
+			pbrSpheres[i][j]->SetPosition(x, y, 0.0f);
+			x += 1.0f;
+		}
+		y -= 1.0f;
+	}
 }
 
 void Game::OnResize()
@@ -290,19 +330,24 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	camera->Update(deltaTime);
 
-	//Update Spheres
-	for (int i = 0; i <= 8; i++)
-	{
-		sphereEntities[i]->UpdateWorldMatrix();
-	}
+	////Update Spheres
+	//for (int i = 0; i <= 8; i++)
+	//{
+	//	sphereEntities[i]->UpdateWorldMatrix();
+	//}
 
-	//Update Flats
-	for (int i = 0; i <= 3; i++)
-	{
-		flatEntities[i]->UpdateWorldMatrix();
-	}
+	////Update Flats
+	//for (int i = 0; i <= 3; i++)
+	//{
+	//	flatEntities[i]->UpdateWorldMatrix();
+	//}
 
-
+	//pbrSphere->UpdateWorldMatrix();
+	for (size_t i = 0; i < 11; i++)
+		for (size_t j = 0; j < 11; j++)
+		{
+			pbrSpheres[i][j]->UpdateWorldMatrix();
+		}
 	if (GetAsyncKeyState(VK_ESCAPE))
 		Quit();
 }
@@ -318,23 +363,68 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->ClearRenderTargetView(backBufferRTV, color);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	context->RSSetState(rasterizer);
+	//context->RSSetState(rasterizer);
 
-	//Render Spheres
-	for (int i = 0; i <= 8 ; i++) 
+	////Render Spheres
+	//for (int i = 0; i <= 8 ; i++) 
+	//{
+	//	render.RenderProcess(sphereEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+	//}
+
+	////Render Flats
+	//for (int i = 0; i <= 3; i++)
+	//{
+	//	render.RenderProcess(flatEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+	//}
+
+	XMFLOAT3 lightPos[4] = { XMFLOAT3(10.0f, 10.0f, -10.0f), XMFLOAT3(10.0f, -10.0f, -10.0f), XMFLOAT3(-10.0f, 10.0f, -10.0f), XMFLOAT3(-10.0f, -10.0f, -10.0f) };
+	
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+
+	float r = 0.0f;
+	for (size_t i = 0; i < 11; i++)
 	{
-		render.RenderProcess(sphereEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
+		float m = 0.0f;
+		for (size_t j = 0; j < 11; j++)
+		{
+
+			vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
+			indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();
+
+			PBRVertexShader->SetMatrix4x4("world", *pbrSpheres[i][j]->GetWorldMatrix());
+			PBRVertexShader->SetMatrix4x4("view", camera->GetView());
+			PBRVertexShader->SetMatrix4x4("projection", camera->GetProjection());
+
+			PBRVertexShader->CopyAllBufferData();
+			PBRVertexShader->SetShader();
+
+			PBRPixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 0.0f, 0.0f));
+			PBRPixelShader->SetFloat("metallic", m);
+			PBRPixelShader->SetFloat("roughness", r);
+			PBRPixelShader->SetFloat("ao", 1.0f);
+
+			PBRPixelShader->SetFloat3("lightPos", XMFLOAT3(0.0f, 0.0f, -10.0f));
+			//PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
+			PBRPixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
+
+			PBRPixelShader->SetFloat3("camPos", camera->GetPosition());
+
+			PBRPixelShader->CopyAllBufferData();
+			PBRPixelShader->SetShader();
+
+			context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+			context->DrawIndexed(pbrSphere->GetMesh()->GetIndexCount(), 0, 0);
+
+			m += 0.1f;
+		}
+		r += 0.1f;
 	}
+	//context->RSSetState(NULL);
 
-	//Render Flats
-	for (int i = 0; i <= 3; i++)
-	{
-		render.RenderProcess(flatEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
-	}
-
-	context->RSSetState(NULL);
-
-	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	//render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
 
 	swapChain->Present(0, 0);
 }

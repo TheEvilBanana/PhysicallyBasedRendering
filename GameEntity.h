@@ -13,6 +13,7 @@ class GameEntity
 {
 public:
 	GameEntity(Mesh *entityMesh, Material *entityMaterial);
+	GameEntity(Mesh *entityMesh);
 	~GameEntity();
 
 	void UpdateWorldMatrix();

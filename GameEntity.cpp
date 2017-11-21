@@ -13,6 +13,16 @@ GameEntity::GameEntity(Mesh *entityMesh, Material *entityMaterial)
 	scale = XMFLOAT3(1, 1, 1);
 }
 
+GameEntity::GameEntity(Mesh * entityMesh)
+{
+	this->mesh = entityMesh;
+
+	XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
+	position = XMFLOAT3(0, 0, 0);
+	rotation = XMFLOAT3(0, 0, 0);
+	scale = XMFLOAT3(1, 1, 1);
+}
+
 
 GameEntity::~GameEntity()
 {

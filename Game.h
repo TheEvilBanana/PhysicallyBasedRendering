@@ -52,7 +52,9 @@ private:
 	SimplePixelShader* basePixelShader;
 	SimpleVertexShader* skyVertexShader;
 	SimplePixelShader* skyPixelShader;
-	SimpleVertexShader* shadowVertexShader;
+	
+	SimpleVertexShader* PBRVertexShader;
+	SimplePixelShader* PBRPixelShader;
 
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;
@@ -92,6 +94,8 @@ private:
 	GameEntity* skyBoxEntity;
 	std::vector<GameEntity*> sphereEntities;
 	std::vector<GameEntity*> flatEntities;
+	GameEntity* pbrSphere;
+	GameEntity* pbrSpheres[11][11];
 
 	//Render Class
 	Render render;
