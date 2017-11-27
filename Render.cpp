@@ -35,9 +35,82 @@ void Render::RenderProcess(GameEntity* &gameEntity, ID3D11Buffer* &vertexBuffer,
 	pixelShader->SetData("spotLight", &spotLight, sizeof(SpotLight));
 	pixelShader->SetFloat3("cameraPosition", camera->GetPosition());
 
-	pixelShader->SetShaderResourceView("textureSRV", gameEntity->GetMaterial()->GetMaterialSRV());
+	pixelShader->SetShaderResourceView("textureSRV", gameEntity->GetMaterial()->GetAlbedoSRV());
 	pixelShader->SetShaderResourceView("normalMapSRV", gameEntity->GetMaterial()->GetNormalSRV());
 	pixelShader->SetSamplerState("basicSampler", gameEntity->GetMaterial()->GetMaterialSampler());
+
+	pixelShader->CopyAllBufferData();
+	pixelShader->SetShader();
+
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	context->DrawIndexed(gameEntity->GetMesh()->GetIndexCount(), 0, 0);
+}
+
+void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context, float m, float r)
+{
+	vertexBuffer = gameEntity->GetMesh()->GetVertexBuffer();
+	indexBuffer = gameEntity->GetMesh()->GetIndexBuffer();
+
+	vertexShader->SetMatrix4x4("world", *gameEntity->GetWorldMatrix());
+	vertexShader->SetMatrix4x4("view", camera->GetView());
+	vertexShader->SetMatrix4x4("projection", camera->GetProjection());
+
+	vertexShader->CopyAllBufferData();
+	vertexShader->SetShader();
+
+	pixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 0.0f, 0.0f));
+	pixelShader->SetFloat("metallic", m);
+	pixelShader->SetFloat("roughness", r);
+	pixelShader->SetFloat("ao", 1.0f);
+
+	pixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
+	//PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
+	pixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
+
+	pixelShader->SetFloat3("camPos", camera->GetPosition());
+
+	pixelShader->CopyAllBufferData();
+	pixelShader->SetShader();
+
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	context->DrawIndexed(gameEntity->GetMesh()->GetIndexCount(), 0, 0);
+}
+
+void Render::PBRMatRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context)
+{
+	vertexBuffer = gameEntity->GetMesh()->GetVertexBuffer();
+	indexBuffer = gameEntity->GetMesh()->GetIndexBuffer();
+
+	vertexShader->SetMatrix4x4("world", *gameEntity->GetWorldMatrix());
+	vertexShader->SetMatrix4x4("view", camera->GetView());
+	vertexShader->SetMatrix4x4("projection", camera->GetProjection());
+
+	vertexShader->CopyAllBufferData();
+	vertexShader->SetShader();
+
+	pixelShader->SetShaderResourceView("albedoSRV", gameEntity->GetMaterial()->GetAlbedoSRV());
+	pixelShader->SetShaderResourceView("normalSRV", gameEntity->GetMaterial()->GetNormalSRV());
+	pixelShader->SetShaderResourceView("metallicSRV", gameEntity->GetMaterial()->GetMetallicSRV());
+	pixelShader->SetShaderResourceView("roughSRV", gameEntity->GetMaterial()->GetRoughSRV());
+
+	pixelShader->SetSamplerState("basicSampler", gameEntity->GetMaterial()->GetMaterialSampler());
+	pixelShader->SetFloat("ao", 1.0f);
+
+	pixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
+	//PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
+	pixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
+
+	pixelShader->SetFloat3("camPos", camera->GetPosition());
 
 	pixelShader->CopyAllBufferData();
 	pixelShader->SetShader();

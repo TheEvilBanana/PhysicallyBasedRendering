@@ -40,24 +40,29 @@ Game::~Game()
 	delete skyPixelShader;
 	delete PBRVertexShader;
 	delete PBRPixelShader;
+	delete PBRMatPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
 
-	delete materialEarth;
-	delete materialCobbleStone;
-	delete materialRed;
-	delete materialYellow;
+	delete materialAluminiumInsulator;
+	delete materialGold;
+	delete materialGunMetal;
+	delete materialLeather;
+	delete materialSuperHeroFabric;
 	delete materialSkyBox;
-	delete materialSnowTracks;
-	delete materialEmpty;
 
 	delete skyBoxEntity;
-	for(auto& se: sphereEntities) delete se;
-	for (auto& fe : flatEntities) delete fe;
+	/*for(auto& se: sphereEntities) delete se;
+	for (auto& fe : flatEntities) delete fe;*/
 	delete pbrSphere;
-	for (size_t i = 0; i < 11; i++)
-		for (size_t j = 0; j < 11; j++)
+	delete pbrSphere1;
+	delete pbrSphere2;
+	delete pbrSphere3;
+	delete pbrSphere4;
+
+	for (size_t i = 0; i < 6; i++)
+		for (size_t j = 0; j < 6; j++)
 		{
 			delete pbrSpheres[i][j];
 		}
@@ -69,15 +74,30 @@ Game::~Game()
 
 	sampler->Release();
 	
-	earthDayMapSRV->Release();
-	earthNormalMapSRV->Release();
-	cobbleStoneSRV->Release();
-	cobbleStoneNormalSRV->Release();
-	plainRedSRV->Release();
-	plainYellowSRV->Release();
-	plainNormalMapSRV->Release();
-	snowTracksSRV->Release();
-	snowTracksNormalSRV->Release();
+	AluminiumInsulator_Albedo->Release();
+	AluminiumInsulator_Normal->Release();
+	AluminiumInsulator_Metallic->Release();
+	AluminiumInsulator_Rough->Release();
+
+	Gold_Albedo->Release();
+	Gold_Normal->Release();
+	Gold_Metallic->Release();
+	Gold_Rough->Release();
+
+	GunMetal_Albedo->Release();
+	GunMetal_Normal->Release();
+	GunMetal_Metallic->Release();
+	GunMetal_Rough->Release();
+
+	Leather_Albedo->Release();
+	Leather_Normal->Release();
+	Leather_Metallic->Release();
+	Leather_Rough->Release();
+
+	SuperHeroFabric_Albedo->Release();
+	SuperHeroFabric_Normal->Release();
+	SuperHeroFabric_Metallic->Release();
+	SuperHeroFabric_Rough->Release();
 
 	skySRV->Release();
 	
@@ -93,8 +113,8 @@ void Game::Init()
 	ShadersInitialize();
 	ModelsInitialize();
 	LoadTextures();
-	MaterialsInitialize();
 	SkyBoxInitialize();
+	MaterialsInitialize();
 	GameEntityInitialize();
 
 
@@ -140,7 +160,7 @@ void Game::Init()
 
 void Game::CameraInitialize()
 {
-	camera = new Camera(0.0f, 0.0f, -14.0f);
+	camera = new Camera(0.0f, 1.0f, -14.0f);
 	camera->UpdateProjectionMatrix((float)width / height);
 }
 
@@ -169,6 +189,10 @@ void Game::ShadersInitialize()
 	PBRPixelShader = new SimplePixelShader(device, context);
 	if (!PBRPixelShader->LoadShaderFile(L"Debug/PBRPixelShader.cso"))
 		PBRPixelShader->LoadShaderFile(L"PBRPixelShader.cso");
+
+	PBRMatPixelShader = new SimplePixelShader(device, context);
+	if (!PBRMatPixelShader->LoadShaderFile(L"Debug/PBRMatPixelShader.cso"))
+		PBRMatPixelShader->LoadShaderFile(L"PBRMatPixelShader.cso");
 }
 
 void Game::ModelsInitialize()
@@ -179,39 +203,30 @@ void Game::ModelsInitialize()
 
 void Game::LoadTextures()
 {
-	CreateWICTextureFromFile(device, context, L"Textures/earth_daymap.jpg", 0, &earthDayMapSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/earth_normal_map.tif", 0, &earthNormalMapSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/rock.jpg", 0, &cobbleStoneSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/rockNormals.jpg", 0, &cobbleStoneNormalSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/red.jpg", 0, &plainRedSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/yellow.jpg", 0, &plainYellowSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/plainNormal.png", 0, &plainNormalMapSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/snowTracks.tif", 0, &snowTracksSRV);
-	CreateWICTextureFromFile(device, context, L"Textures/snowTracksNormal.tif", 0, &snowTracksNormalSRV);
-}
-
-void Game::MaterialsInitialize()
-{
-	D3D11_SAMPLER_DESC samplerDesc = {};
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.MaxAnisotropy = 16;
-	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-	device->CreateSamplerState(&samplerDesc, &sampler);
-
-
-	materialEarth = new Material(basePixelShader, baseVertexShader, earthDayMapSRV, earthNormalMapSRV, sampler);
-	materialCobbleStone = new Material(basePixelShader, baseVertexShader, cobbleStoneSRV, cobbleStoneNormalSRV, sampler);
-	materialRed = new Material(basePixelShader, baseVertexShader, plainRedSRV, plainNormalMapSRV, sampler);
-	materialYellow = new Material(basePixelShader, baseVertexShader, plainYellowSRV, plainNormalMapSRV, sampler);
-	materialSnowTracks = new Material(basePixelShader, baseVertexShader, snowTracksSRV, snowTracksNormalSRV, sampler);
-	materialEmpty = new Material(basePixelShader, baseVertexShader, 0, plainNormalMapSRV, sampler);
-
-	materialSkyBox = new Material(skyPixelShader, skyVertexShader, skySRV, plainNormalMapSRV, sampler);
+	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Albedo.png", 0, &AluminiumInsulator_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Normal.png", 0, &AluminiumInsulator_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Metallic.png", 0, &AluminiumInsulator_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Rough.png", 0, &AluminiumInsulator_Rough);
 	
+	CreateWICTextureFromFile(device, context, L"Textures/Gold_Albedo.png", 0, &Gold_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/Gold_Normal.png", 0, &Gold_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/Gold_Metallic.png", 0, &Gold_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/Gold_Rough.png", 0, &Gold_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Albedo.png", 0, &GunMetal_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Normal.png", 0, &GunMetal_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Metallic.png", 0, &GunMetal_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Rough.png", 0, &GunMetal_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/Leather_Albedo.png", 0, &Leather_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/Leather_Normal.png", 0, &Leather_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/Leather_Metallic.png", 0, &Leather_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/Leather_Rough.png", 0, &Leather_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Albedo.png", 0, &SuperHeroFabric_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Normal.png", 0, &SuperHeroFabric_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Metallic.png", 0, &SuperHeroFabric_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Rough.png", 0, &SuperHeroFabric_Rough);
 }
 
 void Game::SkyBoxInitialize()
@@ -231,81 +246,61 @@ void Game::SkyBoxInitialize()
 	device->CreateDepthStencilState(&depthStencilDesc, &skyDepthState);
 }
 
+void Game::MaterialsInitialize()
+{
+	D3D11_SAMPLER_DESC samplerDesc = {};
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.MaxAnisotropy = 16;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	device->CreateSamplerState(&samplerDesc, &sampler);
+
+	materialAluminiumInsulator = new Material(AluminiumInsulator_Albedo, AluminiumInsulator_Normal, AluminiumInsulator_Metallic, AluminiumInsulator_Rough, sampler);
+	materialGold = new Material(Gold_Albedo, Gold_Normal, Gold_Metallic, Gold_Rough, sampler);
+	materialGunMetal = new Material(GunMetal_Albedo, GunMetal_Normal, GunMetal_Metallic, GunMetal_Rough, sampler);
+	materialLeather = new Material(Leather_Albedo, Leather_Normal, Leather_Metallic, Leather_Rough, sampler);
+	materialSuperHeroFabric = new Material(SuperHeroFabric_Albedo, SuperHeroFabric_Normal, SuperHeroFabric_Metallic, SuperHeroFabric_Rough, sampler);
+
+	materialSkyBox = new Material(skySRV, NULL, NULL, NULL, sampler);
+	
+}
+
 void Game::GameEntityInitialize()
 {
 	skyBoxEntity = new GameEntity(cubeMesh, materialSkyBox);
-	
-	GameEntity* sphere0 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere1 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere2 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere3 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere4 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere5 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere6 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere7 = new GameEntity(sphereMesh, materialCobbleStone);
-	GameEntity* sphere8 = new GameEntity(sphereMesh, materialCobbleStone);
 
-	sphereEntities.push_back(sphere0);
-	sphereEntities.push_back(sphere1);
-	sphereEntities.push_back(sphere2);
-	sphereEntities.push_back(sphere3);
-	sphereEntities.push_back(sphere4);
-	sphereEntities.push_back(sphere5);
-	sphereEntities.push_back(sphere6);
-	sphereEntities.push_back(sphere7);
-	sphereEntities.push_back(sphere8);
+	pbrSphere = new GameEntity(sphereMesh, materialAluminiumInsulator);
+	pbrSphere->SetPosition(2.0f, 3.0f, -8.0f);
 
-	sphereEntities[0]->SetPosition(0, 0, 2);
-	sphereEntities[1]->SetPosition(2, 0, 2);
-	sphereEntities[2]->SetPosition(-2, 0, 2);
-	sphereEntities[3]->SetPosition(0, 0, 0);
-	sphereEntities[4]->SetPosition(2, 0, 0);
-	sphereEntities[5]->SetPosition(-2, 0, 0);
-	sphereEntities[6]->SetPosition(0, 0, -2);
-	sphereEntities[7]->SetPosition(2, 0, -2);
-	sphereEntities[8]->SetPosition(-2, 0, -2);
+	pbrSphere1 = new GameEntity(sphereMesh, materialGold);
+	pbrSphere1->SetPosition(2.0f, 2.0f, -8.0f);
 
+	pbrSphere2 = new GameEntity(sphereMesh, materialGunMetal);
+	pbrSphere2->SetPosition(2.0f, 1.0f, -8.0f);
 
-	GameEntity* flat0 = new GameEntity(cubeMesh, materialEmpty);
-	GameEntity* flat1 = new GameEntity(cubeMesh, materialEmpty);
-	GameEntity* flat2 = new GameEntity(cubeMesh, materialEmpty);
-	GameEntity* flat3 = new GameEntity(cubeMesh, materialEmpty);
-	
-	flatEntities.push_back(flat0);
-	flatEntities.push_back(flat1);
-	flatEntities.push_back(flat2);
-	flatEntities.push_back(flat3);
+	pbrSphere3 = new GameEntity(sphereMesh, materialLeather);
+	pbrSphere3->SetPosition(2.0f, 0.0f, -8.0f);
 
-	flatEntities[0]->SetScale(5.0f, 0.01f, 5.0f);
-	flatEntities[1]->SetScale(5.0f, 0.01f, 5.0f);
-	flatEntities[2]->SetScale(5.0f, 0.01f, 5.0f);
-	flatEntities[3]->SetScale(5.0f, 0.01f, 5.0f);
+	pbrSphere4 = new GameEntity(sphereMesh, materialSuperHeroFabric);
+	pbrSphere4->SetPosition(2.0f, -1.0f, -8.0f);
 
-	flatEntities[0]->SetPosition(0, -1.5f, 0);
-	flatEntities[1]->SetPosition(4.5f, 0, 0);
-	flatEntities[2]->SetPosition(0, 0, 4.5f);
-	flatEntities[3]->SetPosition(-4.5f, 0, 0);
-
-	flatEntities[1]->SetRotation(0, 0, -1.6f);
-	flatEntities[2]->SetRotation(1.6f, 0, 0);
-	flatEntities[3]->SetRotation(0, 0, 1.6f);
-
-	pbrSphere = new GameEntity(sphereMesh);
-
-	for (size_t i = 0; i < 11; i++)
-		for (size_t j = 0; j < 11; j++)
+	for (size_t i = 0; i < 6; i++)
+		for (size_t j = 0; j < 6; j++)
 		{
 			pbrSpheres[i][j] = new GameEntity(sphereMesh);
 		}
 
 	float x = -6.0f; float y = 6.0f;
-	for (size_t i = 0; i < 11; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
-		if (y == -5.0f)
+		if (y == 0.0f)
 			y = 6.0f;
-		for (size_t j = 0; j < 11; j++)
+		for (size_t j = 0; j < 6; j++)
 		{
-			if (x == 5.0f)
+			if (x == 0.0f)
 				x = -6.0f;
 
 			pbrSpheres[i][j]->SetPosition(x, y, 0.0f);
@@ -320,6 +315,7 @@ void Game::OnResize()
 	// Handle base-level DX resize stuff
 	DXCore::OnResize();
 
+	
 	// Update the projection matrix assuming the
 	// camera exists
 	if (camera)
@@ -330,21 +326,15 @@ void Game::Update(float deltaTime, float totalTime)
 {
 	camera->Update(deltaTime);
 
-	////Update Spheres
-	//for (int i = 0; i <= 8; i++)
-	//{
-	//	sphereEntities[i]->UpdateWorldMatrix();
-	//}
+	
+	pbrSphere->UpdateWorldMatrix();
+	pbrSphere1->UpdateWorldMatrix();
+	pbrSphere2->UpdateWorldMatrix();
+	pbrSphere3->UpdateWorldMatrix();
+	pbrSphere4->UpdateWorldMatrix();
 
-	////Update Flats
-	//for (int i = 0; i <= 3; i++)
-	//{
-	//	flatEntities[i]->UpdateWorldMatrix();
-	//}
-
-	//pbrSphere->UpdateWorldMatrix();
-	for (size_t i = 0; i < 11; i++)
-		for (size_t j = 0; j < 11; j++)
+	for (size_t i = 0; i < 6; i++)
+		for (size_t j = 0; j < 6; j++)
 		{
 			pbrSpheres[i][j]->UpdateWorldMatrix();
 		}
@@ -363,71 +353,66 @@ void Game::Draw(float deltaTime, float totalTime)
 	context->ClearRenderTargetView(backBufferRTV, color);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	//context->RSSetState(rasterizer);
-
-	////Render Spheres
-	//for (int i = 0; i <= 8 ; i++) 
-	//{
-	//	render.RenderProcess(sphereEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
-	//}
-
-	////Render Flats
-	//for (int i = 0; i <= 3; i++)
-	//{
-	//	render.RenderProcess(flatEntities[i], vertexBuffer, indexBuffer, baseVertexShader, basePixelShader, camera, context);
-	//}
-
 	XMFLOAT3 lightPos[4] = { XMFLOAT3(10.0f, 10.0f, -10.0f), XMFLOAT3(10.0f, -10.0f, -10.0f), XMFLOAT3(-10.0f, 10.0f, -10.0f), XMFLOAT3(-10.0f, -10.0f, -10.0f) };
 	
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 
 	float r = 0.0f;
-	for (size_t i = 0; i < 11; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
 		float m = 0.0f;
-		for (size_t j = 0; j < 11; j++)
+		for (size_t j = 0; j < 6; j++)
 		{
 
-			vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
-			indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();
+			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r);
 
-			PBRVertexShader->SetMatrix4x4("world", *pbrSpheres[i][j]->GetWorldMatrix());
-			PBRVertexShader->SetMatrix4x4("view", camera->GetView());
-			PBRVertexShader->SetMatrix4x4("projection", camera->GetProjection());
-
-			PBRVertexShader->CopyAllBufferData();
-			PBRVertexShader->SetShader();
-
-			PBRPixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 0.0f, 0.0f));
-			PBRPixelShader->SetFloat("metallic", m);
-			PBRPixelShader->SetFloat("roughness", r);
-			PBRPixelShader->SetFloat("ao", 1.0f);
-
-			PBRPixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
-			PBRPixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
-			PBRPixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
-			PBRPixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
-			//PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
-			PBRPixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
-
-			PBRPixelShader->SetFloat3("camPos", camera->GetPosition());
-
-			PBRPixelShader->CopyAllBufferData();
-			PBRPixelShader->SetShader();
-
-			context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-			context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-			context->DrawIndexed(pbrSphere->GetMesh()->GetIndexCount(), 0, 0);
-
-			m += 0.1f;
+			m += 0.2f;
 		}
-		r += 0.1f;
+		r += 0.2f;
 	}
-	//context->RSSetState(NULL);
+	
+	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	//vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
+	//indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();
 
-	//render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
+	//PBRVertexShader->SetMatrix4x4("world", *pbrSphere->GetWorldMatrix());
+	//PBRVertexShader->SetMatrix4x4("view", camera->GetView());
+	//PBRVertexShader->SetMatrix4x4("projection", camera->GetProjection());
+
+	//PBRVertexShader->CopyAllBufferData();
+	//PBRVertexShader->SetShader();
+
+	//PBRMatPixelShader->SetShaderResourceView("albedoSRV", pbrSphere->GetMaterial()->GetAlbedoSRV());
+	//PBRMatPixelShader->SetShaderResourceView("normalSRV", pbrSphere->GetMaterial()->GetNormalSRV());
+	//PBRMatPixelShader->SetShaderResourceView("metallicSRV", pbrSphere->GetMaterial()->GetMetallicSRV());
+	//PBRMatPixelShader->SetShaderResourceView("roughSRV", pbrSphere->GetMaterial()->GetRoughSRV());
+
+	//PBRMatPixelShader->SetSamplerState("basicSampler", pbrSphere->GetMaterial()->GetMaterialSampler());
+	//PBRMatPixelShader->SetFloat("ao", 1.0f);
+
+	//PBRMatPixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
+	//PBRMatPixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
+	//PBRMatPixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
+	//PBRMatPixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
+	////PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
+	//PBRMatPixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
+
+	//PBRMatPixelShader->SetFloat3("camPos", camera->GetPosition());
+
+	//PBRMatPixelShader->CopyAllBufferData();
+	//PBRMatPixelShader->SetShader();
+
+	//context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	//context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	//context->DrawIndexed(pbrSphere->GetMesh()->GetIndexCount(), 0, 0);
+
+	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
 
 	swapChain->Present(0, 0);
 }

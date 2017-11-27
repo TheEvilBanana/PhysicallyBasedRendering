@@ -55,22 +55,41 @@ private:
 	
 	SimpleVertexShader* PBRVertexShader;
 	SimplePixelShader* PBRPixelShader;
+	SimplePixelShader* PBRMatPixelShader;
 
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;
 
-	//Texture Shader Resource Views(SRVs)
-	ID3D11ShaderResourceView* earthDayMapSRV;
-	ID3D11ShaderResourceView* cobbleStoneSRV;
-	ID3D11ShaderResourceView* snowTracksSRV;
-	ID3D11ShaderResourceView* plainRedSRV;
-	ID3D11ShaderResourceView* plainYellowSRV;
+	//Albedo Shader Resource Views(SRVs)
+	ID3D11ShaderResourceView* AluminiumInsulator_Albedo;
+	ID3D11ShaderResourceView* Gold_Albedo;
+	ID3D11ShaderResourceView* GunMetal_Albedo;
+	ID3D11ShaderResourceView* Leather_Albedo;
+	ID3D11ShaderResourceView* SuperHeroFabric_Albedo;
 
 	//Normal Shader Resource Views(SRVs)
-	ID3D11ShaderResourceView* plainNormalMapSRV;
-	ID3D11ShaderResourceView* earthNormalMapSRV;
-	ID3D11ShaderResourceView* cobbleStoneNormalSRV;
-	ID3D11ShaderResourceView* snowTracksNormalSRV;
+	ID3D11ShaderResourceView* AluminiumInsulator_Normal;
+	ID3D11ShaderResourceView* Gold_Normal;
+	ID3D11ShaderResourceView* GunMetal_Normal;
+	ID3D11ShaderResourceView* Leather_Normal;
+	ID3D11ShaderResourceView* SuperHeroFabric_Normal;
+
+	//Metallic Shader Resource Views(SRVs)
+	ID3D11ShaderResourceView* AluminiumInsulator_Metallic;
+	ID3D11ShaderResourceView* Gold_Metallic;
+	ID3D11ShaderResourceView* GunMetal_Metallic;
+	ID3D11ShaderResourceView* Leather_Metallic;
+	ID3D11ShaderResourceView* SuperHeroFabric_Metallic;
+
+	//Roughness Shader Resource Views(SRVs)
+	ID3D11ShaderResourceView* AluminiumInsulator_Rough;
+	ID3D11ShaderResourceView* Gold_Rough;
+	ID3D11ShaderResourceView* GunMetal_Rough;
+	ID3D11ShaderResourceView* Leather_Rough;
+	ID3D11ShaderResourceView* SuperHeroFabric_Rough;
+
+	//AO Shader Resource Views(SRVs)
+
 
 	//Sky Box Stuff
 	ID3D11ShaderResourceView* skySRV;
@@ -82,20 +101,24 @@ private:
 	Mesh* cubeMesh;
 
 	//Material Class
-	Material* materialEarth;
-	Material* materialCobbleStone;
-	Material* materialRed;
-	Material* materialYellow;
 	Material* materialSkyBox;
-	Material* materialSnowTracks;
-	Material* materialEmpty;
+	Material* materialAluminiumInsulator;
+	Material* materialGold;
+	Material* materialGunMetal;
+	Material* materialLeather;
+	Material* materialSuperHeroFabric;
 
 	//Game Entity Class
 	GameEntity* skyBoxEntity;
 	std::vector<GameEntity*> sphereEntities;
 	std::vector<GameEntity*> flatEntities;
 	GameEntity* pbrSphere;
-	GameEntity* pbrSpheres[11][11];
+	GameEntity* pbrSphere1;
+	GameEntity* pbrSphere2;
+	GameEntity* pbrSphere3;
+	GameEntity* pbrSphere4;
+
+	GameEntity* pbrSpheres[6][6];
 
 	//Render Class
 	Render render;

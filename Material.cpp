@@ -1,12 +1,13 @@
 #include "Material.h"
 
 
-Material::Material(SimplePixelShader* _pixelShader, SimpleVertexShader* _vertexShader, ID3D11ShaderResourceView* _materialSRV, ID3D11ShaderResourceView* _normalSRV, ID3D11SamplerState* _materialSampler)
+Material::Material(ID3D11ShaderResourceView* _albedoSRV, ID3D11ShaderResourceView* _normalSRV, ID3D11ShaderResourceView* _metallicSRV, ID3D11ShaderResourceView* _roughSRV, ID3D11SamplerState* _materialSampler)
 {
-	pixelShader = _pixelShader;
-	vertexShader = _vertexShader;
-	materialSRV = _materialSRV;
+	
+	albedoSRV = _albedoSRV;
 	normalSRV = _normalSRV;
+	metallicSRV = _metallicSRV;
+	roughSRV = _roughSRV;
 	materialSampler = _materialSampler;
 }
 
@@ -14,24 +15,34 @@ Material::~Material()
 {
 }
 
-SimplePixelShader* Material::GetPixelShader()
-{
-	return pixelShader;
-}
+//SimplePixelShader* Material::GetPixelShader()
+//{
+//	return pixelShader;
+//}
+//
+//SimpleVertexShader* Material::GetVertexShader()
+//{
+//	return vertexShader;
+//}
 
-SimpleVertexShader* Material::GetVertexShader()
+ID3D11ShaderResourceView * Material::GetAlbedoSRV()
 {
-	return vertexShader;
-}
-
-ID3D11ShaderResourceView * Material::GetMaterialSRV()
-{
-	return materialSRV;
+	return albedoSRV;
 }
 
 ID3D11ShaderResourceView * Material::GetNormalSRV()
 {
 	return normalSRV;
+}
+
+ID3D11ShaderResourceView * Material::GetMetallicSRV()
+{
+	return metallicSRV;
+}
+
+ID3D11ShaderResourceView * Material::GetRoughSRV()
+{
+	return roughSRV;
 }
 
 ID3D11SamplerState * Material::GetMaterialSampler()

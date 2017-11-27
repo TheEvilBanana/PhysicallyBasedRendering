@@ -2,9 +2,9 @@ struct VertexToPixel
 {
 	float4 position		: SV_POSITION;
 	float3 normal		: NORMAL;
-	//float3 tangent		: TANGENT;
+	float3 tangent		: TANGENT;
 	float3 worldPos		: POSITION;
-	//float2 uv			: TEXCOORD;
+	float2 uv			: TEXCOORD;
 };
 
 static const float PI = 3.14159265359;
