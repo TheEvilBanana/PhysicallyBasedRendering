@@ -50,6 +50,12 @@ Game::~Game()
 	delete materialGunMetal;
 	delete materialLeather;
 	delete materialSuperHeroFabric;
+	delete materialCamoFabric;
+	delete materialGlassVisor;
+	delete materialIronOld;
+	delete materialRubber;
+	delete materialWood;
+
 	delete materialSkyBox;
 
 	delete skyBoxEntity;
@@ -60,6 +66,11 @@ Game::~Game()
 	delete pbrSphere2;
 	delete pbrSphere3;
 	delete pbrSphere4;
+	delete pbrSphere5;
+	delete pbrSphere6;
+	delete pbrSphere7;
+	delete pbrSphere8;
+	delete pbrSphere9;
 
 	for (size_t i = 0; i < 6; i++)
 		for (size_t j = 0; j < 6; j++)
@@ -98,6 +109,31 @@ Game::~Game()
 	SuperHeroFabric_Normal->Release();
 	SuperHeroFabric_Metallic->Release();
 	SuperHeroFabric_Rough->Release();
+
+	CamoFabric_Albedo->Release();
+	CamoFabric_Normal->Release(); 
+	CamoFabric_Metallic->Release(); 
+	CamoFabric_Rough->Release();
+
+	GlassVisor_Albedo->Release();
+	GlassVisor_Normal->Release(); 
+	GlassVisor_Metallic->Release();
+	GlassVisor_Rough->Release();
+	
+	IronOld_Albedo->Release();
+	IronOld_Normal->Release();
+	IronOld_Metallic->Release();
+	IronOld_Rough->Release();
+
+	Rubber_Albedo->Release();
+	Rubber_Normal->Release();
+	Rubber_Metallic->Release();
+	Rubber_Rough->Release();
+
+	Wood_Albedo->Release();
+	Wood_Normal->Release();
+	Wood_Metallic->Release();
+	Wood_Rough->Release();
 
 	skySRV->Release();
 	
@@ -206,27 +242,52 @@ void Game::LoadTextures()
 	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Albedo.png", 0, &AluminiumInsulator_Albedo);
 	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Normal.png", 0, &AluminiumInsulator_Normal);
 	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Metallic.png", 0, &AluminiumInsulator_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Rough.png", 0, &AluminiumInsulator_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/AluminiumInsulator_Roughness.png", 0, &AluminiumInsulator_Rough);
 	
 	CreateWICTextureFromFile(device, context, L"Textures/Gold_Albedo.png", 0, &Gold_Albedo);
 	CreateWICTextureFromFile(device, context, L"Textures/Gold_Normal.png", 0, &Gold_Normal);
 	CreateWICTextureFromFile(device, context, L"Textures/Gold_Metallic.png", 0, &Gold_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/Gold_Rough.png", 0, &Gold_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/Gold_Roughness.png", 0, &Gold_Rough);
 
 	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Albedo.png", 0, &GunMetal_Albedo);
 	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Normal.png", 0, &GunMetal_Normal);
 	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Metallic.png", 0, &GunMetal_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Rough.png", 0, &GunMetal_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/GunMetal_Roughness.png", 0, &GunMetal_Rough);
 
 	CreateWICTextureFromFile(device, context, L"Textures/Leather_Albedo.png", 0, &Leather_Albedo);
 	CreateWICTextureFromFile(device, context, L"Textures/Leather_Normal.png", 0, &Leather_Normal);
 	CreateWICTextureFromFile(device, context, L"Textures/Leather_Metallic.png", 0, &Leather_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/Leather_Rough.png", 0, &Leather_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/Leather_Roughness.png", 0, &Leather_Rough);
 
 	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Albedo.png", 0, &SuperHeroFabric_Albedo);
 	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Normal.png", 0, &SuperHeroFabric_Normal);
 	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Metallic.png", 0, &SuperHeroFabric_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Rough.png", 0, &SuperHeroFabric_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Roughness.png", 0, &SuperHeroFabric_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/CamoFabric_Albedo.png", 0, &CamoFabric_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/CamoFabric_Normal.png", 0, &CamoFabric_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/CamoFabric_Metallic.png", 0, &CamoFabric_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/CamoFabric_Roughness.png", 0, &CamoFabric_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/GlassVisor_Albedo.png", 0, &GlassVisor_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/GlassVisor_Normal.png", 0, &GlassVisor_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/GlassVisor_Metallic.png", 0, &GlassVisor_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/GlassVisor_Roughness.png", 0, &GlassVisor_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/IronOld_Albedo.png", 0, &IronOld_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/IronOld_Normal.png", 0, &IronOld_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/IronOld_Metallic.png", 0, &IronOld_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/IronOld_Roughness.png", 0, &IronOld_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Albedo.png", 0, &Rubber_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Normal.png", 0, &Rubber_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Metallic.png", 0, &Rubber_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Roughness.png", 0, &Rubber_Rough);
+
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Albedo.png", 0, &Wood_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Normal.png", 0, &Wood_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Metallic.png", 0, &Wood_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Roughness.png", 0, &Wood_Rough);
 }
 
 void Game::SkyBoxInitialize()
@@ -263,6 +324,11 @@ void Game::MaterialsInitialize()
 	materialGunMetal = new Material(GunMetal_Albedo, GunMetal_Normal, GunMetal_Metallic, GunMetal_Rough, sampler);
 	materialLeather = new Material(Leather_Albedo, Leather_Normal, Leather_Metallic, Leather_Rough, sampler);
 	materialSuperHeroFabric = new Material(SuperHeroFabric_Albedo, SuperHeroFabric_Normal, SuperHeroFabric_Metallic, SuperHeroFabric_Rough, sampler);
+	materialCamoFabric = new Material(CamoFabric_Albedo, CamoFabric_Normal, CamoFabric_Metallic, CamoFabric_Rough, sampler);
+	materialGlassVisor = new Material(GlassVisor_Albedo, GlassVisor_Normal, GlassVisor_Metallic, GlassVisor_Rough, sampler);
+	materialIronOld = new Material(IronOld_Albedo, IronOld_Normal, IronOld_Metallic, IronOld_Rough, sampler);
+	materialRubber = new Material(Rubber_Albedo, Rubber_Normal, Rubber_Metallic, Rubber_Rough, sampler);
+	materialWood = new Material(Wood_Albedo, Wood_Normal, Wood_Metallic, Wood_Rough, sampler);
 
 	materialSkyBox = new Material(skySRV, NULL, NULL, NULL, sampler);
 	
@@ -273,19 +339,34 @@ void Game::GameEntityInitialize()
 	skyBoxEntity = new GameEntity(cubeMesh, materialSkyBox);
 
 	pbrSphere = new GameEntity(sphereMesh, materialAluminiumInsulator);
-	pbrSphere->SetPosition(2.0f, 3.0f, -8.0f);
+	pbrSphere->SetPosition(2.0f, 3.0f, -7.0f);
 
 	pbrSphere1 = new GameEntity(sphereMesh, materialGold);
-	pbrSphere1->SetPosition(2.0f, 2.0f, -8.0f);
+	pbrSphere1->SetPosition(2.0f, 2.0f, -7.0f);
 
 	pbrSphere2 = new GameEntity(sphereMesh, materialGunMetal);
-	pbrSphere2->SetPosition(2.0f, 1.0f, -8.0f);
+	pbrSphere2->SetPosition(2.0f, 1.0f, -7.0f);
 
 	pbrSphere3 = new GameEntity(sphereMesh, materialLeather);
-	pbrSphere3->SetPosition(2.0f, 0.0f, -8.0f);
+	pbrSphere3->SetPosition(2.0f, 0.0f, -7.0f);
 
 	pbrSphere4 = new GameEntity(sphereMesh, materialSuperHeroFabric);
-	pbrSphere4->SetPosition(2.0f, -1.0f, -8.0f);
+	pbrSphere4->SetPosition(2.0f, -1.0f, -7.0f);
+
+	pbrSphere5 = new GameEntity(sphereMesh, materialCamoFabric);
+	pbrSphere5->SetPosition(3.0f, 3.0f, -7.0f);
+
+	pbrSphere6 = new GameEntity(sphereMesh, materialGlassVisor);
+	pbrSphere6->SetPosition(3.0f, 2.0f, -7.0f);
+
+	pbrSphere7 = new GameEntity(sphereMesh, materialIronOld);
+	pbrSphere7->SetPosition(3.0f, 1.0f, -7.0f);
+
+	pbrSphere8 = new GameEntity(sphereMesh, materialRubber);
+	pbrSphere8->SetPosition(3.0f, 0.0f, -7.0f);
+
+	pbrSphere9 = new GameEntity(sphereMesh, materialWood);
+	pbrSphere9->SetPosition(3.0f, -1.0f, -7.0f);
 
 	for (size_t i = 0; i < 6; i++)
 		for (size_t j = 0; j < 6; j++)
@@ -332,6 +413,11 @@ void Game::Update(float deltaTime, float totalTime)
 	pbrSphere2->UpdateWorldMatrix();
 	pbrSphere3->UpdateWorldMatrix();
 	pbrSphere4->UpdateWorldMatrix();
+	pbrSphere5->UpdateWorldMatrix();
+	pbrSphere6->UpdateWorldMatrix();
+	pbrSphere7->UpdateWorldMatrix();
+	pbrSphere8->UpdateWorldMatrix();
+	pbrSphere9->UpdateWorldMatrix();
 
 	for (size_t i = 0; i < 6; i++)
 		for (size_t j = 0; j < 6; j++)
@@ -377,6 +463,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
 	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
 	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+
 	//vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
 	//indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();
 

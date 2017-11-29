@@ -66,6 +66,11 @@ private:
 	ID3D11ShaderResourceView* GunMetal_Albedo;
 	ID3D11ShaderResourceView* Leather_Albedo;
 	ID3D11ShaderResourceView* SuperHeroFabric_Albedo;
+	ID3D11ShaderResourceView* CamoFabric_Albedo;
+	ID3D11ShaderResourceView* GlassVisor_Albedo;
+	ID3D11ShaderResourceView* IronOld_Albedo;
+	ID3D11ShaderResourceView* Rubber_Albedo;
+	ID3D11ShaderResourceView* Wood_Albedo;
 
 	//Normal Shader Resource Views(SRVs)
 	ID3D11ShaderResourceView* AluminiumInsulator_Normal;
@@ -73,6 +78,11 @@ private:
 	ID3D11ShaderResourceView* GunMetal_Normal;
 	ID3D11ShaderResourceView* Leather_Normal;
 	ID3D11ShaderResourceView* SuperHeroFabric_Normal;
+	ID3D11ShaderResourceView* CamoFabric_Normal;
+	ID3D11ShaderResourceView* GlassVisor_Normal;
+	ID3D11ShaderResourceView* IronOld_Normal;
+	ID3D11ShaderResourceView* Rubber_Normal;
+	ID3D11ShaderResourceView* Wood_Normal;
 
 	//Metallic Shader Resource Views(SRVs)
 	ID3D11ShaderResourceView* AluminiumInsulator_Metallic;
@@ -80,6 +90,11 @@ private:
 	ID3D11ShaderResourceView* GunMetal_Metallic;
 	ID3D11ShaderResourceView* Leather_Metallic;
 	ID3D11ShaderResourceView* SuperHeroFabric_Metallic;
+	ID3D11ShaderResourceView* CamoFabric_Metallic;
+	ID3D11ShaderResourceView* GlassVisor_Metallic;
+	ID3D11ShaderResourceView* IronOld_Metallic;
+	ID3D11ShaderResourceView* Rubber_Metallic;
+	ID3D11ShaderResourceView* Wood_Metallic;
 
 	//Roughness Shader Resource Views(SRVs)
 	ID3D11ShaderResourceView* AluminiumInsulator_Rough;
@@ -87,6 +102,11 @@ private:
 	ID3D11ShaderResourceView* GunMetal_Rough;
 	ID3D11ShaderResourceView* Leather_Rough;
 	ID3D11ShaderResourceView* SuperHeroFabric_Rough;
+	ID3D11ShaderResourceView* CamoFabric_Rough;
+	ID3D11ShaderResourceView* GlassVisor_Rough;
+	ID3D11ShaderResourceView* IronOld_Rough;
+	ID3D11ShaderResourceView* Rubber_Rough;
+	ID3D11ShaderResourceView* Wood_Rough;
 
 	//AO Shader Resource Views(SRVs)
 
@@ -107,6 +127,11 @@ private:
 	Material* materialGunMetal;
 	Material* materialLeather;
 	Material* materialSuperHeroFabric;
+	Material* materialCamoFabric;
+	Material* materialGlassVisor;
+	Material* materialIronOld;
+	Material* materialRubber;
+	Material* materialWood;
 
 	//Game Entity Class
 	GameEntity* skyBoxEntity;
@@ -117,6 +142,11 @@ private:
 	GameEntity* pbrSphere2;
 	GameEntity* pbrSphere3;
 	GameEntity* pbrSphere4;
+	GameEntity* pbrSphere5;
+	GameEntity* pbrSphere6;
+	GameEntity* pbrSphere7;
+	GameEntity* pbrSphere8;
+	GameEntity* pbrSphere9;
 
 	GameEntity* pbrSpheres[6][6];
 
