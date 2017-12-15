@@ -136,7 +136,7 @@ Game::~Game()
 	Wood_Rough->Release();
 
 	skySRV->Release();
-	
+	skyIR->Release();
 
 
 }
@@ -292,7 +292,8 @@ void Game::LoadTextures()
 
 void Game::SkyBoxInitialize()
 {
-	CreateDDSTextureFromFile(device, L"Textures/SunnyCubeMap.dds", 0, &skySRV);
+	CreateDDSTextureFromFile(device, L"Textures/skybox1.dds", 0, &skySRV);
+	CreateDDSTextureFromFile(device, L"Textures/skybox1IR.dds", 0, &skyIR);
 
 	D3D11_RASTERIZER_DESC rasterizerDesc = {};
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
@@ -316,7 +317,7 @@ void Game::MaterialsInitialize()
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc.MaxAnisotropy = 16;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
+	
 	device->CreateSamplerState(&samplerDesc, &sampler);
 
 	materialAluminiumInsulator = new Material(AluminiumInsulator_Albedo, AluminiumInsulator_Normal, AluminiumInsulator_Metallic, AluminiumInsulator_Rough, sampler);
@@ -451,23 +452,23 @@ void Game::Draw(float deltaTime, float totalTime)
 		for (size_t j = 0; j < 6; j++)
 		{
 
-			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r);
+			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r, skyIR, sampler);
 
 			m += 0.2f;
 		}
 		r += 0.2f;
 	}
 	
-	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
-	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context);
+	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
 
 	//vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
 	//indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();

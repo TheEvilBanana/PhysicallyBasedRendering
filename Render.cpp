@@ -48,7 +48,7 @@ void Render::RenderProcess(GameEntity* &gameEntity, ID3D11Buffer* &vertexBuffer,
 	context->DrawIndexed(gameEntity->GetMesh()->GetIndexCount(), 0, 0);
 }
 
-void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context, float m, float r)
+void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context, float m, float r, ID3D11ShaderResourceView*& skyIR, ID3D11SamplerState*& sampler)
 {
 	vertexBuffer = gameEntity->GetMesh()->GetVertexBuffer();
 	indexBuffer = gameEntity->GetMesh()->GetIndexBuffer();
@@ -60,7 +60,10 @@ void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBu
 	vertexShader->CopyAllBufferData();
 	vertexShader->SetShader();
 
-	pixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 0.0f, 0.0f));
+	pixelShader->SetShaderResourceView("skyIR", skyIR);
+	pixelShader->SetSamplerState("basicSampler", sampler);
+
+	pixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 1.0f, 1.0f));
 	pixelShader->SetFloat("metallic", m);
 	pixelShader->SetFloat("roughness", r);
 	pixelShader->SetFloat("ao", 1.0f);
@@ -83,7 +86,7 @@ void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBu
 	context->DrawIndexed(gameEntity->GetMesh()->GetIndexCount(), 0, 0);
 }
 
-void Render::PBRMatRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context)
+void Render::PBRMatRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBuffer, ID3D11Buffer *& indexBuffer, SimpleVertexShader *& vertexShader, SimplePixelShader *& pixelShader, Camera *& camera, ID3D11DeviceContext *& context, ID3D11ShaderResourceView *& skyIR, ID3D11SamplerState *& sampler)
 {
 	vertexBuffer = gameEntity->GetMesh()->GetVertexBuffer();
 	indexBuffer = gameEntity->GetMesh()->GetIndexBuffer();
@@ -94,6 +97,9 @@ void Render::PBRMatRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& verte
 
 	vertexShader->CopyAllBufferData();
 	vertexShader->SetShader();
+
+	pixelShader->SetShaderResourceView("skyIR", skyIR);
+	pixelShader->SetSamplerState("basicSampler", sampler);
 
 	pixelShader->SetShaderResourceView("albedoSRV", gameEntity->GetMaterial()->GetAlbedoSRV());
 	pixelShader->SetShaderResourceView("normalSRV", gameEntity->GetMaterial()->GetNormalSRV());

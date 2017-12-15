@@ -116,6 +116,8 @@ private:
 	ID3D11RasterizerState* skyRasterizerState;
 	ID3D11DepthStencilState* skyDepthState;
 
+	ID3D11ShaderResourceView* skyIR;
+
 	//Mesh Class
 	Mesh* sphereMesh;
 	Mesh* cubeMesh;

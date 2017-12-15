@@ -1,5 +1,8 @@
 #include <PBRHeader.hlsli>
 
+TextureCube skyIR			: register(t0);
+SamplerState basicSampler	: register(s0);
+
 cbuffer ExternalData : register(b0) {
 	float3 albedo;
 	float metallic;
@@ -55,6 +58,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	F0 = lerp(F0, albedo, metallic);
 
 	float3 rad = float3(0.0f, 0.0f, 0.0f);
+
+	
+
 	//reflectance equation
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
 
@@ -70,7 +76,11 @@ float4 main(VertexToPixel input) : SV_TARGET
 	CalcRadiance(input, viewDir, normalVec, lightPos4, lightCol, F0, rad);
 	Lo += rad;
 
-	float3 ambient = float3(0.03f, 0.03f, 0.03f) * albedo * ao;
+	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
+	float3 kS = FresnelSchlickRoughness(max(dot(normalVec, viewDir), 0.0f), F0, roughness);
+	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	float3 diffuse = albedo * irradiance;
+	float3 ambient = (kD * diffuse) * ao;
 	float3 color = ambient + Lo;
 
 
@@ -78,4 +88,5 @@ float4 main(VertexToPixel input) : SV_TARGET
 	color = pow(color, float3(1.0f / 2.2f, 1.0f / 2.2f, 1.0f / 2.2f));
 	
 	return float4(color, 1.0f);
+	
 }

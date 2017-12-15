@@ -1,11 +1,14 @@
 #include <PBRHeader.hlsli>
 
+
+
 Texture2D albedoSRV : register(t0);
 Texture2D normalSRV : register(t1);
 Texture2D metallicSRV : register(t2);
 Texture2D roughSRV : register(t3);
 
-SamplerState basicSampler : register(s0);
+TextureCube skyIR			: register(t4);
+SamplerState basicSampler	: register(s0);
 
 cbuffer ExternalData : register(b0) {
 	/*float3 albedo;
@@ -102,7 +105,11 @@ float4 main(VertexToPixel input) : SV_TARGET
 	CalcRadiance(input, viewDir, normalVec, albedo, rough, metallic, lightPos4, lightCol, F0, rad);
 	Lo += rad;
 
-	float3 ambient = float3(0.03f, 0.03f, 0.03f) * albedo * ao;
+	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
+	float3 kS = FresnelSchlickRoughness(max(dot(normalVec, viewDir), 0.0f), F0, rough);
+	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	float3 diffuse = albedo * irradiance;
+	float3 ambient = (kD * diffuse) * ao;
 	float3 color = ambient + Lo;
 
 

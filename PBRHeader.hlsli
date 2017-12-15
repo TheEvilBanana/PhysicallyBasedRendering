@@ -9,6 +9,14 @@ struct VertexToPixel
 
 static const float PI = 3.14159265359;
 
+SamplerState SamplerAnisotropic
+{
+	Filter = ANISOTROPIC;
+	MaxAnisotropy = 16;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
 float NormalDistributionGGXTR(float3 normalVec, float3 halfwayVec, float roughness)    
 {
 	float a = roughness*roughness;
@@ -47,4 +55,9 @@ float GeometrySmith(float3 normalVec, float3 viewDir, float3 lightDir, float k)
 float3 FresnelSchlick(float cosTheta, float3 F0)   // cosTheta is n.v and F0 is the base reflectivity
 {
 	return (F0 + (1.0f - F0) * pow(1.0 - cosTheta, 5.0f));
+}
+
+float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)   // cosTheta is n.v and F0 is the base reflectivity
+{
+	return F0 + (max(float3(1.0f - roughness, 1.0f - roughness, 1.0f - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0f);
 }
