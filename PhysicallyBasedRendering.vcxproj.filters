@@ -102,9 +102,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="PBRHeader.hlsli">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
