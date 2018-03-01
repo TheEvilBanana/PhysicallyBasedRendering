@@ -3,6 +3,7 @@
 TextureCube Sky			: register(t0);
 SamplerState basicSampler	: register(s0);
 
+
 // Defines the input to this pixel shader
 // - Should match the output of our corresponding vertex shader
 struct VertexToPixel
