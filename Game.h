@@ -67,6 +67,12 @@ private:
 	ID3D11RenderTargetView* skyIBLRTV[6];
 	ID3D11ShaderResourceView* skyIBLSRV;
 	
+	ID3D11RenderTargetView* envMapRTV[6];
+	ID3D11ShaderResourceView* envMapSRV;
+
+	ID3D11Texture2D* brdfLUTtex;
+	ID3D11RenderTargetView* brdfLUTRTV;
+	ID3D11ShaderResourceView* brdfLUTSRV;
 
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;

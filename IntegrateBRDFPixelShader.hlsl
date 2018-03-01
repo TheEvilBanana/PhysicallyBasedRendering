@@ -1,9 +1,9 @@
 #include <IBLHeader.hlsli>
 
-float4 main() : SV_TARGET
+float2 main() : SV_TARGET
 {
-	float2 IntegrateBRDF(float NdotV, float Roughness)
-{
+	//float2 IntegrateBRDF(float NdotV, float Roughness)
+
 	float3 viewDir;
 	viewDir.x = sqrt(1.0f - NdotV * NdotV); // sin
 	viewDir.y = 0;
@@ -38,5 +38,6 @@ float4 main() : SV_TARGET
 		}
 	}
 	return float2(A, B) / NumSamples;
-}
+
+	
 }

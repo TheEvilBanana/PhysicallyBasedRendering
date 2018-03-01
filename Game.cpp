@@ -42,8 +42,8 @@ Game::~Game()
 	delete PBRPixelShader;
 	delete PBRMatPixelShader;
 	delete ConvolutionPixelShader;
-	delete PrefilterMapPixelShader;
-	delete IntegrateBRDFPixelShader;
+	//delete PrefilterMapPixelShader;
+	//delete IntegrateBRDFPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
@@ -84,9 +84,15 @@ Game::~Game()
 	
 	for (int i = 0; i < 6; i++) {
 		skyIBLRTV[i]->Release();
+		envMapRTV[i]->Release();
 	}
 	skyIBLtex->Release();
 	skyIBLSRV->Release();
+	envMapSRV->Release();
+
+	brdfLUTtex->Release();
+	brdfLUTRTV->Release();
+	brdfLUTSRV->Release();
 
 	rasterizer->Release();
 
@@ -249,13 +255,13 @@ void Game::ShadersInitialize()
 	if (!ConvolutionPixelShader->LoadShaderFile(L"Debug/ConvolutionPixelShader.cso"))
 		ConvolutionPixelShader->LoadShaderFile(L"ConvolutionPixelShader.cso");
 
-	PrefilterMapPixelShader = new SimplePixelShader(device, context);
+	/*PrefilterMapPixelShader = new SimplePixelShader(device, context);
 	if (!PrefilterMapPixelShader->LoadShaderFile(L"Debug/PrefilterMapPixelShader.cso"))
 		PrefilterMapPixelShader->LoadShaderFile(L"PrefilterMapPixelShader.cso");
 
 	IntegrateBRDFPixelShader = new SimplePixelShader(device, context);
 	if (!IntegrateBRDFPixelShader->LoadShaderFile(L"Debug/IntegrateBRDFPixelShader.cso"))
-		IntegrateBRDFPixelShader->LoadShaderFile(L"IntegrateBRDFPixelShader.cso");
+		IntegrateBRDFPixelShader->LoadShaderFile(L"IntegrateBRDFPixelShader.cso");*/
 }
 
 void Game::ModelsInitialize()
@@ -443,31 +449,61 @@ void Game::IBLStuff()
 	skyIBLDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
 	skyIBLDesc.SampleDesc.Count = 1;
 	skyIBLDesc.SampleDesc.Quality = 0;
-
+	//---
+	D3D11_TEXTURE2D_DESC brdfLUTDesc;
+	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
+	brdfLUTDesc.Width = 512;
+	brdfLUTDesc.Height = 512;
+	brdfLUTDesc.MipLevels = 0;
+	brdfLUTDesc.ArraySize = 1;
+	brdfLUTDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	brdfLUTDesc.Usage = D3D11_USAGE_DEFAULT;
+	brdfLUTDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	brdfLUTDesc.CPUAccessFlags = 0;
+	brdfLUTDesc.MiscFlags = 0;
+	brdfLUTDesc.SampleDesc.Count = 1;
+	brdfLUTDesc.SampleDesc.Quality = 0;
+	//---
 	D3D11_RENDER_TARGET_VIEW_DESC skyIBLRTVDesc;
 	ZeroMemory(&skyIBLRTVDesc, sizeof(skyIBLRTVDesc));
 	skyIBLRTVDesc.Format = skyIBLDesc.Format;
 	skyIBLRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
 	skyIBLRTVDesc.Texture2DArray.ArraySize = 1;
 	skyIBLRTVDesc.Texture2DArray.MipSlice = 0;
-
+	//---
+	D3D11_RENDER_TARGET_VIEW_DESC envMapRTVDesc;
+	ZeroMemory(&envMapRTVDesc, sizeof(envMapRTVDesc));
+	envMapRTVDesc.Format = skyIBLDesc.Format;
+	skyIBLRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	envMapRTVDesc.Texture2DArray.ArraySize = 1;
+	envMapRTVDesc.Texture2DArray.MipSlice = 0;
+	//---
+	D3D11_RENDER_TARGET_VIEW_DESC brdfLUTRTVDesc;
+	ZeroMemory(&brdfLUTRTVDesc, sizeof(brdfLUTRTVDesc));
+	brdfLUTRTVDesc.Format = brdfLUTDesc.Format;
+	brdfLUTRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	//---
 	D3D11_SHADER_RESOURCE_VIEW_DESC skyIBLSRVDesc;
 	ZeroMemory(&skyIBLSRVDesc, sizeof(skyIBLSRVDesc));
 	skyIBLSRVDesc.Format = skyIBLDesc.Format;
 	skyIBLSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
 	skyIBLSRVDesc.TextureCube.MostDetailedMip = 0;
 	skyIBLSRVDesc.TextureCube.MipLevels = 1;
-
-
-	device->CreateTexture2D(&skyIBLDesc, 0, &skyIBLtex);
-
-	for (int i = 0; i < 6; i++) {
-		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
-		device->CreateRenderTargetView(skyIBLtex, &skyIBLRTVDesc, &skyIBLRTV[i]);
-	}
-
-	device->CreateShaderResourceView(skyIBLtex, &skyIBLSRVDesc, &skyIBLSRV);
-
+	//---
+	D3D11_SHADER_RESOURCE_VIEW_DESC envMapSRVDesc;
+	ZeroMemory(&envMapSRVDesc, sizeof(envMapSRVDesc));
+	envMapSRVDesc.Format = skyIBLDesc.Format;
+	envMapSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
+	envMapSRVDesc.TextureCube.MipLevels = 5;
+	//---
+	D3D11_SHADER_RESOURCE_VIEW_DESC brdfLUTSRVDesc;
+	ZeroMemory(&brdfLUTSRVDesc, sizeof(brdfLUTSRVDesc));
+	brdfLUTSRVDesc.Format = brdfLUTSRVDesc.Format;
+	brdfLUTSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
+	envMapSRVDesc.TextureCube.MipLevels = 1;
+	//---
 	D3D11_VIEWPORT skyIBLviewport;
 	skyIBLviewport.Width = 512;
 	skyIBLviewport.Height = 512;
@@ -476,16 +512,40 @@ void Game::IBLStuff()
 	skyIBLviewport.TopLeftX = 0.0f;
 	skyIBLviewport.TopLeftY = 0.0f;
 
+	D3D11_VIEWPORT envMapviewport;
+	envMapviewport.Width = 512;
+	envMapviewport.Height = 512;
+	envMapviewport.MinDepth = 0.0f;
+	envMapviewport.MaxDepth = 1.0f;
+	envMapviewport.TopLeftX = 0.0f;
+	envMapviewport.TopLeftY = 0.0f;
+
 	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
 	XMFLOAT4X4 camViewMatrix;
 	XMFLOAT4X4 camProjMatrix;
 	XMVECTOR tar[] = { XMVectorSet(1, 0, 0, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, -1, 0) };
 	XMVECTOR up[] = { XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0) };
-	
+
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	const float color[4] = { 0.6f, 0.6f, 0.6f, 0.0f };
+	//---
+
+	device->CreateTexture2D(&skyIBLDesc, 0, &skyIBLtex);
+	device->CreateTexture2D(&brdfLUTDesc, 0, &brdfLUTtex);
+
+	for (int i = 0; i < 6; i++) {
+		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
+		device->CreateRenderTargetView(skyIBLtex, &skyIBLRTVDesc, &skyIBLRTV[i]);
+		device->CreateRenderTargetView(skyIBLtex, &envMapRTVDesc, &envMapRTV[i]);
+	}
+	device->CreateRenderTargetView(brdfLUTtex, &brdfLUTRTVDesc, &brdfLUTRTV);
+
+	device->CreateShaderResourceView(skyIBLtex, &skyIBLSRVDesc, &skyIBLSRV);
+	device->CreateShaderResourceView(skyIBLtex, &envMapSRVDesc, &envMapSRV);
+	device->CreateShaderResourceView(brdfLUTtex, &brdfLUTSRVDesc, &brdfLUTSRV);
+	
 
 	for (int i = 0; i < 6; i++) {
 		//-- Cam directions
@@ -527,7 +587,20 @@ void Game::IBLStuff()
 		context->RSSetState(0);
 		context->OMSetDepthStencilState(0, 0);
 	}
+
+	context->GenerateMips(envMapSRV);
 	
+	// CREATE MULTIPLE RTVs
+	unsigned int maxMipLevels = envMapSRVDesc.TextureCube.MipLevels;
+	for (unsigned int mip = 0; mip < maxMipLevels; ++mip) {
+		unsigned mipWidth = 512 * pow(0.5, mip);
+		unsigned mipHeight = 512 * pow(0.5, mip);
+
+		
+
+		
+
+	}
 }
 
 void Game::OnResize()
