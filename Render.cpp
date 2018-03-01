@@ -129,6 +129,9 @@ void Render::PBRMatRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& verte
 
 void Render::RenderSkyBox(Mesh* &mesh, ID3D11Buffer* &vertexBuffer, ID3D11Buffer* &indexBuffer, SimpleVertexShader* &vertexShader, SimplePixelShader* &pixelShader, Camera* &camera, ID3D11DeviceContext* &context, ID3D11RasterizerState* &rasterizerState, ID3D11DepthStencilState* &depthState, ID3D11ShaderResourceView* &SRV)
 {
+	context->RSSetState(rasterizerState);
+	context->OMSetDepthStencilState(depthState, 0);
+
 	vertexBuffer = mesh->GetVertexBuffer();
 	indexBuffer = mesh->GetIndexBuffer();
 	
@@ -146,8 +149,7 @@ void Render::RenderSkyBox(Mesh* &mesh, ID3D11Buffer* &vertexBuffer, ID3D11Buffer
 	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	context->RSSetState(rasterizerState);
-	context->OMSetDepthStencilState(depthState, 0);
+	
 
 	context->DrawIndexed(mesh->GetIndexCount(), 0, 0);
 

@@ -41,6 +41,7 @@ Game::~Game()
 	delete PBRVertexShader;
 	delete PBRPixelShader;
 	delete PBRMatPixelShader;
+	delete ConvolutionPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
@@ -77,6 +78,13 @@ Game::~Game()
 		{
 			delete pbrSpheres[i][j];
 		}
+
+	
+	for (int i = 0; i < 6; i++) {
+		skyIBLRTV[i]->Release();
+	}
+	skyIBLtex->Release();
+	skyIBLSRV->Release();
 
 	rasterizer->Release();
 
@@ -145,6 +153,7 @@ Game::~Game()
 void Game::Init()
 {
 	//Initialize helper methods
+	
 	CameraInitialize();
 	ShadersInitialize();
 	ModelsInitialize();
@@ -152,7 +161,7 @@ void Game::Init()
 	SkyBoxInitialize();
 	MaterialsInitialize();
 	GameEntityInitialize();
-
+	
 
 	//Setup rasterizer state 
 	D3D11_RASTERIZER_DESC rasterizerDesc;
@@ -192,7 +201,11 @@ void Game::Init()
 	// geometric primitives (points, lines or triangles) we want to draw.  
 	// Essentially: "What kind of shape should the GPU draw with our data?"
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	IBLStuff();
 }
+
+
 
 void Game::CameraInitialize()
 {
@@ -229,6 +242,10 @@ void Game::ShadersInitialize()
 	PBRMatPixelShader = new SimplePixelShader(device, context);
 	if (!PBRMatPixelShader->LoadShaderFile(L"Debug/PBRMatPixelShader.cso"))
 		PBRMatPixelShader->LoadShaderFile(L"PBRMatPixelShader.cso");
+
+	ConvolutionPixelShader = new SimplePixelShader(device, context);
+	if (!ConvolutionPixelShader->LoadShaderFile(L"Debug/ConvolutionPixelShader.cso"))
+		ConvolutionPixelShader->LoadShaderFile(L"ConvolutionPixelShader.cso");
 }
 
 void Game::ModelsInitialize()
@@ -284,10 +301,10 @@ void Game::LoadTextures()
 	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Metallic.png", 0, &Rubber_Metallic);
 	CreateWICTextureFromFile(device, context, L"Textures/Rubber_Roughness.png", 0, &Rubber_Rough);
 
-	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Albedo.png", 0, &Wood_Albedo);
-	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Normal.png", 0, &Wood_Normal);
-	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Metallic.png", 0, &Wood_Metallic);
-	CreateWICTextureFromFile(device, context, L"Textures/SuperHeroFabric_Roughness.png", 0, &Wood_Rough);
+	CreateWICTextureFromFile(device, context, L"Textures/Wood_Albedo.png", 0, &Wood_Albedo);
+	CreateWICTextureFromFile(device, context, L"Textures/Wood_Normal.png", 0, &Wood_Normal);
+	CreateWICTextureFromFile(device, context, L"Textures/Wood_Metallic.png", 0, &Wood_Metallic);
+	CreateWICTextureFromFile(device, context, L"Textures/Wood_Roughness.png", 0, &Wood_Rough);
 }
 
 void Game::SkyBoxInitialize()
@@ -306,6 +323,13 @@ void Game::SkyBoxInitialize()
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	device->CreateDepthStencilState(&depthStencilDesc, &skyDepthState);
+
+
+	//----
+	
+
+
+
 }
 
 void Game::MaterialsInitialize()
@@ -392,6 +416,118 @@ void Game::GameEntityInitialize()
 	}
 }
 
+void Game::IBLStuff()
+{
+
+
+	D3D11_TEXTURE2D_DESC skyIBLDesc;
+	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
+	skyIBLDesc.Width = 512;
+	skyIBLDesc.Height = 512;
+	skyIBLDesc.MipLevels = 0;
+	skyIBLDesc.ArraySize = 6;
+	skyIBLDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	skyIBLDesc.Usage = D3D11_USAGE_DEFAULT;
+	skyIBLDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	skyIBLDesc.CPUAccessFlags = 0;
+	skyIBLDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	skyIBLDesc.SampleDesc.Count = 1;
+	skyIBLDesc.SampleDesc.Quality = 0;
+
+	D3D11_RENDER_TARGET_VIEW_DESC skyIBLRTVDesc;
+	ZeroMemory(&skyIBLRTVDesc, sizeof(skyIBLRTVDesc));
+	skyIBLRTVDesc.Format = skyIBLDesc.Format;
+	skyIBLRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	skyIBLRTVDesc.Texture2DArray.ArraySize = 1;
+	skyIBLRTVDesc.Texture2DArray.MipSlice = 0;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC skyIBLSRVDesc;
+	ZeroMemory(&skyIBLSRVDesc, sizeof(skyIBLSRVDesc));
+	skyIBLSRVDesc.Format = skyIBLDesc.Format;
+	skyIBLSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	skyIBLSRVDesc.TextureCube.MostDetailedMip = 0;
+	skyIBLSRVDesc.TextureCube.MipLevels = 1;
+
+
+	device->CreateTexture2D(&skyIBLDesc, 0, &skyIBLtex);
+
+	for (int i = 0; i < 6; i++) {
+		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
+		device->CreateRenderTargetView(skyIBLtex, &skyIBLRTVDesc, &skyIBLRTV[i]);
+	}
+
+	device->CreateShaderResourceView(skyIBLtex, &skyIBLSRVDesc, &skyIBLSRV);
+
+	D3D11_VIEWPORT skyIBLviewport;
+	skyIBLviewport.Width = 512;
+	skyIBLviewport.Height = 512;
+	skyIBLviewport.MinDepth = 0.0f;
+	skyIBLviewport.MaxDepth = 1.0f;
+	skyIBLviewport.TopLeftX = 0.0f;
+	skyIBLviewport.TopLeftY = 0.0f;
+
+	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
+	XMFLOAT4X4 camViewMatrix;
+	XMFLOAT4X4 camProjMatrix;
+	XMVECTOR tar[] = { XMVectorSet(1, 0, 0, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, -1, 0) };
+	XMVECTOR up[] = { XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0) };
+	//XMFLOAT4 rotation;
+	//-- Cam directions
+	/*XMVECTOR dir = XMVector3Rotate(tar[0], XMQuaternionIdentity());
+	XMMATRIX view = XMMatrixLookToLH(XMLoadFloat3(&position), dir,up[0]);
+	XMStoreFloat4x4(&camViewMatrix, XMMatrixTranspose(view));
+
+	XMMATRIX P = XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);			
+	XMStoreFloat4x4(&camProjMatrix, XMMatrixTranspose(P));*/
+
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	const float color[4] = { 0.6f, 0.6f, 0.6f, 0.0f };
+
+	for (int i = 0; i < 6; i++) {
+		//-- Cam directions
+		XMVECTOR dir = XMVector3Rotate(tar[i], XMQuaternionIdentity());
+		XMMATRIX view = DirectX::XMMatrixLookToLH(XMLoadFloat3(&position), dir, up[i]);
+		XMStoreFloat4x4(&camViewMatrix, DirectX::XMMatrixTranspose(view));
+
+		XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);
+		XMStoreFloat4x4(&camProjMatrix, DirectX::XMMatrixTranspose(P));
+
+		context->OMSetRenderTargets(1, &skyIBLRTV[i], 0);
+		context->RSSetViewports(1, &skyIBLviewport);
+		context->ClearRenderTargetView(skyIBLRTV[i], color);
+		//context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+		vertexBuffer = cubeMesh->GetVertexBuffer();
+		indexBuffer = cubeMesh->GetIndexBuffer();
+
+		skyVertexShader->SetMatrix4x4("view", camViewMatrix);
+		skyVertexShader->SetMatrix4x4("projection", camProjMatrix);
+
+		skyVertexShader->CopyAllBufferData();
+		skyVertexShader->SetShader();
+
+		ConvolutionPixelShader->SetShaderResourceView("Sky", skySRV);
+
+		ConvolutionPixelShader->CopyAllBufferData();
+		ConvolutionPixelShader->SetShader();
+
+		context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+		context->RSSetState(skyRasterizerState);
+		context->OMSetDepthStencilState(skyDepthState, 0);
+
+		context->DrawIndexed(cubeMesh->GetIndexCount(), 0, 0);
+
+		// Reset the render states we've changed
+		context->RSSetState(0);
+		context->OMSetDepthStencilState(0, 0);
+	}
+	//context->GenerateMips(skyIBLSRV);
+	//----
+}
+
 void Game::OnResize()
 {
 	// Handle base-level DX resize stuff
@@ -431,12 +567,16 @@ void Game::Update(float deltaTime, float totalTime)
 
 void Game::Draw(float deltaTime, float totalTime)
 {
+
 	// Background color (Cornflower Blue in this case) for clearing
 	const float color[4] = { 0.6f, 0.6f, 0.6f, 0.0f };
+
 
 	// Clear the render target and depth buffer (erases what's on the screen)
 	//  - Do this ONCE PER FRAME
 	//  - At the beginning of Draw (before drawing *anything*)
+	context->OMSetRenderTargets(1, &backBufferRTV, depthStencilView);
+	context->RSSetViewports(1, &viewport);
 	context->ClearRenderTargetView(backBufferRTV, color);
 	context->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
@@ -452,7 +592,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		for (size_t j = 0; j < 6; j++)
 		{
 
-			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r, skyIR, sampler);
+			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r, skyIBLSRV, sampler);
 
 			m += 0.2f;
 		}

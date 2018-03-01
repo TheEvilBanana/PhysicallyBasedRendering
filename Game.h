@@ -33,6 +33,7 @@ public:
 private:
 
 	// Initialization helper methods 
+	
 	void CameraInitialize();
 	void ShadersInitialize();
 	void ModelsInitialize();
@@ -40,6 +41,7 @@ private:
 	void MaterialsInitialize();
 	void SkyBoxInitialize();
 	void GameEntityInitialize();
+	void IBLStuff();
 
 	// Buffers to hold actual geometry data
 	ID3D11Buffer* vertexBuffer;
@@ -56,6 +58,12 @@ private:
 	SimpleVertexShader* PBRVertexShader;
 	SimplePixelShader* PBRPixelShader;
 	SimplePixelShader* PBRMatPixelShader;
+	SimplePixelShader* ConvolutionPixelShader;
+	//IBL
+	ID3D11Texture2D* skyIBLtex;
+	ID3D11RenderTargetView* skyIBLRTV[6];
+	ID3D11ShaderResourceView* skyIBLSRV;
+	
 
 	// Sampler for wrapping textures
 	ID3D11SamplerState* sampler;
