@@ -42,6 +42,7 @@ float GeometrySchlickGGX(float NdotV, float roughness)  // k is a remapping of r
 	return nom / denom;
 }
 
+
 float GeometrySmith(float3 normalVec, float3 viewDir, float3 lightDir, float k)
 {
 	float NdotV = max(dot(normalVec, viewDir), 0.0f);
@@ -61,3 +62,5 @@ float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)   // 
 {
 	return F0 + (max(float3(1.0f - roughness, 1.0f - roughness, 1.0f - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0f);
 }
+
+

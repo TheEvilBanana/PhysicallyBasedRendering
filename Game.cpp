@@ -42,6 +42,8 @@ Game::~Game()
 	delete PBRPixelShader;
 	delete PBRMatPixelShader;
 	delete ConvolutionPixelShader;
+	delete PrefilterMapPixelShader;
+	delete IntegrateBRDFPixelShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
@@ -246,6 +248,14 @@ void Game::ShadersInitialize()
 	ConvolutionPixelShader = new SimplePixelShader(device, context);
 	if (!ConvolutionPixelShader->LoadShaderFile(L"Debug/ConvolutionPixelShader.cso"))
 		ConvolutionPixelShader->LoadShaderFile(L"ConvolutionPixelShader.cso");
+
+	PrefilterMapPixelShader = new SimplePixelShader(device, context);
+	if (!PrefilterMapPixelShader->LoadShaderFile(L"Debug/PrefilterMapPixelShader.cso"))
+		PrefilterMapPixelShader->LoadShaderFile(L"PrefilterMapPixelShader.cso");
+
+	IntegrateBRDFPixelShader = new SimplePixelShader(device, context);
+	if (!IntegrateBRDFPixelShader->LoadShaderFile(L"Debug/IntegrateBRDFPixelShader.cso"))
+		IntegrateBRDFPixelShader->LoadShaderFile(L"IntegrateBRDFPixelShader.cso");
 }
 
 void Game::ModelsInitialize()
@@ -471,14 +481,7 @@ void Game::IBLStuff()
 	XMFLOAT4X4 camProjMatrix;
 	XMVECTOR tar[] = { XMVectorSet(1, 0, 0, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, -1, 0) };
 	XMVECTOR up[] = { XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0) };
-	//XMFLOAT4 rotation;
-	//-- Cam directions
-	/*XMVECTOR dir = XMVector3Rotate(tar[0], XMQuaternionIdentity());
-	XMMATRIX view = XMMatrixLookToLH(XMLoadFloat3(&position), dir,up[0]);
-	XMStoreFloat4x4(&camViewMatrix, XMMatrixTranspose(view));
-
-	XMMATRIX P = XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);			
-	XMStoreFloat4x4(&camProjMatrix, XMMatrixTranspose(P));*/
+	
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
@@ -524,8 +527,7 @@ void Game::IBLStuff()
 		context->RSSetState(0);
 		context->OMSetDepthStencilState(0, 0);
 	}
-	//context->GenerateMips(skyIBLSRV);
-	//----
+	
 }
 
 void Game::OnResize()
@@ -599,16 +601,16 @@ void Game::Draw(float deltaTime, float totalTime)
 		r += 0.2f;
 	}
 	
-	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
-	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIR, sampler);
+	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
 
 	//vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
 	//indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();

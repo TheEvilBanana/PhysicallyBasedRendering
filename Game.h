@@ -59,6 +59,9 @@ private:
 	SimplePixelShader* PBRPixelShader;
 	SimplePixelShader* PBRMatPixelShader;
 	SimplePixelShader* ConvolutionPixelShader;
+	SimplePixelShader* PrefilterMapPixelShader;
+	SimplePixelShader* IntegrateBRDFPixelShader;
+
 	//IBL
 	ID3D11Texture2D* skyIBLtex;
 	ID3D11RenderTargetView* skyIBLRTV[6];
