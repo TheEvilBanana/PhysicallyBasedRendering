@@ -435,7 +435,18 @@ void Game::GameEntityInitialize()
 
 void Game::IBLStuff()
 {
-
+	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
+	XMFLOAT4X4 camViewMatrix;
+	XMFLOAT4X4 camProjMatrix;
+	XMVECTOR tar[] = { XMVectorSet(1, 0, 0, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, -1, 0) };
+	XMVECTOR up[] = { XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0) };
+	//---
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	const float color[4] = { 0.6f, 0.6f, 0.6f, 0.0f };
+	//---
+#pragma region Diffuse IBL
+	// DIFFUSE IBL CONVOLUTION
 
 	D3D11_TEXTURE2D_DESC skyIBLDesc;
 	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
@@ -451,34 +462,6 @@ void Game::IBLStuff()
 	skyIBLDesc.SampleDesc.Count = 1;
 	skyIBLDesc.SampleDesc.Quality = 0;
 	//---
-	D3D11_TEXTURE2D_DESC envMapDesc;
-	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
-	envMapDesc.Width = 512;
-	envMapDesc.Height = 512;
-	envMapDesc.MipLevels = 0;
-	envMapDesc.ArraySize = 6;
-	envMapDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	envMapDesc.Usage = D3D11_USAGE_DEFAULT;
-	envMapDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	envMapDesc.CPUAccessFlags = 0;
-	envMapDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
-	envMapDesc.SampleDesc.Count = 1;
-	envMapDesc.SampleDesc.Quality = 0;
-	//---
-	D3D11_TEXTURE2D_DESC brdfLUTDesc;
-	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
-	brdfLUTDesc.Width = 512;
-	brdfLUTDesc.Height = 512;
-	brdfLUTDesc.MipLevels = 0;
-	brdfLUTDesc.ArraySize = 1;
-	brdfLUTDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
-	brdfLUTDesc.Usage = D3D11_USAGE_DEFAULT;
-	brdfLUTDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	brdfLUTDesc.CPUAccessFlags = 0;
-	brdfLUTDesc.MiscFlags = 0;
-	brdfLUTDesc.SampleDesc.Count = 1;
-	brdfLUTDesc.SampleDesc.Quality = 0;
-	//---
 	D3D11_RENDER_TARGET_VIEW_DESC skyIBLRTVDesc;
 	ZeroMemory(&skyIBLRTVDesc, sizeof(skyIBLRTVDesc));
 	skyIBLRTVDesc.Format = skyIBLDesc.Format;
@@ -486,39 +469,12 @@ void Game::IBLStuff()
 	skyIBLRTVDesc.Texture2DArray.ArraySize = 1;
 	skyIBLRTVDesc.Texture2DArray.MipSlice = 0;
 	//---
-	D3D11_RENDER_TARGET_VIEW_DESC envMapRTVDesc;
-	ZeroMemory(&envMapRTVDesc, sizeof(envMapRTVDesc));
-	envMapRTVDesc.Format = skyIBLDesc.Format;
-	envMapRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-	envMapRTVDesc.Texture2DArray.ArraySize = 1;
-	envMapRTVDesc.Texture2DArray.MipSlice = 0;
-	
-	//---
-	D3D11_RENDER_TARGET_VIEW_DESC brdfLUTRTVDesc;
-	ZeroMemory(&brdfLUTRTVDesc, sizeof(brdfLUTRTVDesc));
-	brdfLUTRTVDesc.Format = brdfLUTDesc.Format;
-	brdfLUTRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	//---
 	D3D11_SHADER_RESOURCE_VIEW_DESC skyIBLSRVDesc;
 	ZeroMemory(&skyIBLSRVDesc, sizeof(skyIBLSRVDesc));
 	skyIBLSRVDesc.Format = skyIBLDesc.Format;
 	skyIBLSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
 	skyIBLSRVDesc.TextureCube.MostDetailedMip = 0;
 	skyIBLSRVDesc.TextureCube.MipLevels = 1;
-	//---
-	D3D11_SHADER_RESOURCE_VIEW_DESC envMapSRVDesc;
-	ZeroMemory(&envMapSRVDesc, sizeof(envMapSRVDesc));
-	envMapSRVDesc.Format = skyIBLDesc.Format;
-	envMapSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
-	envMapSRVDesc.TextureCube.MipLevels = 5;
-	//---
-	D3D11_SHADER_RESOURCE_VIEW_DESC brdfLUTSRVDesc;
-	ZeroMemory(&brdfLUTSRVDesc, sizeof(brdfLUTSRVDesc));
-	brdfLUTSRVDesc.Format = brdfLUTSRVDesc.Format;
-	brdfLUTSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
-	envMapSRVDesc.TextureCube.MipLevels = 1;
 	//---
 	D3D11_VIEWPORT skyIBLviewport;
 	skyIBLviewport.Width = 512;
@@ -528,28 +484,9 @@ void Game::IBLStuff()
 	skyIBLviewport.TopLeftX = 0.0f;
 	skyIBLviewport.TopLeftY = 0.0f;
 	//---
-	D3D11_VIEWPORT envMapviewport;
-	envMapviewport.Width = 512;
-	envMapviewport.Height = 512;
-	envMapviewport.MinDepth = 0.0f;
-	envMapviewport.MaxDepth = 1.0f;
-	envMapviewport.TopLeftX = 0.0f;
-	envMapviewport.TopLeftY = 0.0f;
-	//---
-	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
-	XMFLOAT4X4 camViewMatrix;
-	XMFLOAT4X4 camProjMatrix;
-	XMVECTOR tar[] = { XMVectorSet(1, 0, 0, 0), XMVectorSet(-1, 0, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, -1, 0, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 0, -1, 0) };
-	XMVECTOR up[] = { XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 0, -1, 0), XMVectorSet(0, 0, 1, 0), XMVectorSet(0, 1, 0, 0), XMVectorSet(0, 1, 0, 0) };
-	//---
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-	const float color[4] = { 0.6f, 0.6f, 0.6f, 0.0f };
-	//---
-
+	
 	device->CreateTexture2D(&skyIBLDesc, 0, &skyIBLtex);
-	device->CreateTexture2D(&envMapDesc, 0, &envMaptex);
-	device->CreateTexture2D(&brdfLUTDesc, 0, &brdfLUTtex);
+	
 
 	/*for (int i = 0; i < 6; i++) {
 		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
@@ -559,11 +496,10 @@ void Game::IBLStuff()
 		device->CreateRenderTargetView(envMaptex, &envMapRTVDesc, &envMapRTV[i]);
 	}*/
 
-	device->CreateRenderTargetView(brdfLUTtex, &brdfLUTRTVDesc, &brdfLUTRTV);
-
 	device->CreateShaderResourceView(skyIBLtex, &skyIBLSRVDesc, &skyIBLSRV);
-	device->CreateShaderResourceView(envMaptex, &envMapSRVDesc, &envMapSRV);
-	//device->CreateShaderResourceView(brdfLUTtex, &brdfLUTSRVDesc, &brdfLUTSRV);
+
+
+	
 	
 
 	for (int i = 0; i < 6; i++) {
@@ -609,9 +545,50 @@ void Game::IBLStuff()
 		context->RSSetState(0);
 		context->OMSetDepthStencilState(0, 0);
 	}
+#pragma endregion
 
-	//context->GenerateMips(envMapSRV);
+#pragma region Prefilter EnvMap
+	// PREFILTER ENVIRONMENT MAP
 	
+	D3D11_TEXTURE2D_DESC envMapDesc;
+	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
+	envMapDesc.Width = 512;
+	envMapDesc.Height = 512;
+	envMapDesc.MipLevels = 0;
+	envMapDesc.ArraySize = 6;
+	envMapDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	envMapDesc.Usage = D3D11_USAGE_DEFAULT;
+	envMapDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	envMapDesc.CPUAccessFlags = 0;
+	envMapDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	envMapDesc.SampleDesc.Count = 1;
+	envMapDesc.SampleDesc.Quality = 0;
+	//---
+	D3D11_RENDER_TARGET_VIEW_DESC envMapRTVDesc;
+	ZeroMemory(&envMapRTVDesc, sizeof(envMapRTVDesc));
+	envMapRTVDesc.Format = skyIBLDesc.Format;
+	envMapRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+	envMapRTVDesc.Texture2DArray.ArraySize = 1;
+	envMapRTVDesc.Texture2DArray.MipSlice = 0;
+	//---
+	D3D11_SHADER_RESOURCE_VIEW_DESC envMapSRVDesc;
+	ZeroMemory(&envMapSRVDesc, sizeof(envMapSRVDesc));
+	envMapSRVDesc.Format = skyIBLDesc.Format;
+	envMapSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
+	envMapSRVDesc.TextureCube.MipLevels = 5;
+	//---
+	D3D11_VIEWPORT envMapviewport;
+	envMapviewport.Width = 512;
+	envMapviewport.Height = 512;
+	envMapviewport.MinDepth = 0.0f;
+	envMapviewport.MaxDepth = 1.0f;
+	envMapviewport.TopLeftX = 0.0f;
+	envMapviewport.TopLeftY = 0.0f;
+	//---
+	device->CreateTexture2D(&envMapDesc, 0, &envMaptex);
+	device->CreateShaderResourceView(envMaptex, &envMapSRVDesc, &envMapSRV);
+
 	// CREATE MULTIPLE RTVs
 	/*unsigned int maxMipLevels = envMapSRVDesc.TextureCube.MipLevels;
 	for (unsigned int mip = 0; mip < 1; mip++) {
@@ -635,7 +612,7 @@ void Game::IBLStuff()
 
 		XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);
 		XMStoreFloat4x4(&camProjMatrix, DirectX::XMMatrixTranspose(P));
-
+		//---
 		context->OMSetRenderTargets(1, &envMapRTV[i], 0);
 		context->RSSetViewports(1, &envMapviewport);
 		context->ClearRenderTargetView(envMapRTV[i], color);
@@ -672,6 +649,41 @@ void Game::IBLStuff()
 	}
 	context->GenerateMips(envMapSRV);
 	//}
+#pragma endregion
+
+#pragma region Integrate BRDF LUT
+	// INTEGRATE BRDF & CREATE LUT
+
+	D3D11_TEXTURE2D_DESC brdfLUTDesc;
+	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
+	brdfLUTDesc.Width = 512;
+	brdfLUTDesc.Height = 512;
+	brdfLUTDesc.MipLevels = 0;
+	brdfLUTDesc.ArraySize = 1;
+	brdfLUTDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	brdfLUTDesc.Usage = D3D11_USAGE_DEFAULT;
+	brdfLUTDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	brdfLUTDesc.CPUAccessFlags = 0;
+	brdfLUTDesc.MiscFlags = 0;
+	brdfLUTDesc.SampleDesc.Count = 1;
+	brdfLUTDesc.SampleDesc.Quality = 0;
+	//---
+	D3D11_RENDER_TARGET_VIEW_DESC brdfLUTRTVDesc;
+	ZeroMemory(&brdfLUTRTVDesc, sizeof(brdfLUTRTVDesc));
+	brdfLUTRTVDesc.Format = brdfLUTDesc.Format;
+	brdfLUTRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	//---
+	D3D11_SHADER_RESOURCE_VIEW_DESC brdfLUTSRVDesc;
+	ZeroMemory(&brdfLUTSRVDesc, sizeof(brdfLUTSRVDesc));
+	brdfLUTSRVDesc.Format = brdfLUTSRVDesc.Format;
+	brdfLUTSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	brdfLUTSRVDesc.TextureCube.MostDetailedMip = 0;
+	brdfLUTSRVDesc.TextureCube.MipLevels = 1;
+	//---
+	device->CreateTexture2D(&brdfLUTDesc, 0, &brdfLUTtex);
+	device->CreateRenderTargetView(brdfLUTtex, &brdfLUTRTVDesc, &brdfLUTRTV);
+	//device->CreateShaderResourceView(brdfLUTtex, &brdfLUTSRVDesc, &brdfLUTSRV);
+#pragma endregion
 }
 
 void Game::OnResize()
