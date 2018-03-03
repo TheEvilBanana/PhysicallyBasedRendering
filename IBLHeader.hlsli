@@ -16,7 +16,7 @@ float NormalDistributionGGXTR(float3 normalVec, float3 halfwayVec, float roughne
 
 float IBLGeometrySchlickGGX(float NdotV, float roughness)  // k is a remapping of roughness based on direct lighting or IBL lighting
 {
-	float r = roughness + 1.0f;
+	float r = roughness;
 	float k = (r * r) / 2.0f;
 
 	float nom = NdotV;
@@ -56,7 +56,7 @@ float2 Hammersley(uint i, uint N)
 float3 ImportanceSampleGGX(float2 Xi, float Roughness, float3 normalVec)
 {
 	float a = Roughness * Roughness;
-	float Phi = 2 * PI * Xi.x;
+	float Phi = 2.0f * PI * Xi.x;
 	float CosTheta = sqrt((1 - Xi.y) / (1 + (a*a - 1) * Xi.y));
 	float SinTheta = sqrt(1 - CosTheta * CosTheta);
 	// from spherical coordinates to cartesian coordinates - halfway vector
@@ -69,5 +69,5 @@ float3 ImportanceSampleGGX(float2 Xi, float Roughness, float3 normalVec)
 	float3 TangentX = normalize(cross(UpVector, normalVec));
 	float3 TangentY = cross(normalVec, TangentX);
 	// Tangent to world space
-	return TangentX * halfwayVec.x + TangentY * halfwayVec.y + normalVec * halfwayVec.z;
+	return normalize((TangentX * halfwayVec.x) + (TangentY * halfwayVec.y) + (normalVec * halfwayVec.z));
 }

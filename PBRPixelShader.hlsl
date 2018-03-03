@@ -1,6 +1,9 @@
 #include <PBRHeader.hlsli>
 
 TextureCube skyIR			: register(t0);
+TextureCube skyPrefilter	: register(t1);
+Texture2D brdfLUT			: register(t2);
+
 SamplerState basicSampler	: register(s0);
 
 cbuffer ExternalData : register(b0) {
@@ -53,14 +56,12 @@ float4 main(VertexToPixel input) : SV_TARGET
 
 	float3 viewDir = normalize(camPos - input.worldPos);
 	float3 normalVec = normalize(input.normal);
+	float3 R = reflect(-viewDir, normalVec);
 
 	float3 F0 = float3(0.04f, 0.04f, 0.04f);
 	F0 = lerp(F0, albedo, metallic);
 
 	float3 rad = float3(0.0f, 0.0f, 0.0f);
-
-	
-
 	//reflectance equation
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
 
@@ -76,11 +77,20 @@ float4 main(VertexToPixel input) : SV_TARGET
 	CalcRadiance(input, viewDir, normalVec, lightPos4, lightCol, F0, rad);
 	Lo += rad;
 
-	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
+	
 	float3 kS = FresnelSchlickRoughness(max(dot(normalVec, viewDir), 0.0f), F0, roughness);
 	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= 1.0 - metallic;
+
+	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
 	float3 diffuse = albedo * irradiance;
-	float3 ambient = (kD * diffuse) * ao;
+
+	const float MAX_REF_LOD = 4.0f;
+	float3 prefilteredColor = skyPrefilter.SampleLevel(basicSampler, R, roughness * MAX_REF_LOD).rgb;
+	float2 brdf = brdfLUT.Sample(basicSampler, float2(max(dot(normalVec, viewDir), 0.0f), roughness)).rg;
+	float3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
+
+	float3 ambient = (kD * diffuse + specular) * ao;
 	float3 color = ambient + Lo;
 
 

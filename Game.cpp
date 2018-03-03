@@ -43,10 +43,12 @@ Game::~Game()
 	delete PBRMatPixelShader;
 	delete ConvolutionPixelShader;
 	delete PrefilterMapPixelShader;
-	//delete IntegrateBRDFPixelShader;
+	delete IntegrateBRDFPixelShader;
+	delete QuadVertexShader;
 
 	delete sphereMesh;
 	delete cubeMesh;
+	delete quadMesh;
 
 	delete materialAluminiumInsulator;
 	delete materialGold;
@@ -61,6 +63,7 @@ Game::~Game()
 
 	delete materialSkyBox;
 
+	delete quadEntity;
 	delete skyBoxEntity;
 	/*for(auto& se: sphereEntities) delete se;
 	for (auto& fe : flatEntities) delete fe;*/
@@ -82,18 +85,14 @@ Game::~Game()
 		}
 
 	
-	for (int i = 0; i < 6; i++) {
-		skyIBLRTV[i]->Release();
-		envMapRTV[i]->Release();
-	}
-	skyIBLtex->Release();
-	envMaptex->Release();
+	
+	
 	skyIBLSRV->Release();
 	envMapSRV->Release();
-
+	envMaptex->Release();
+	skyIBLtex->Release();
+	brdfLUTSRV->Release();
 	brdfLUTtex->Release();
-	brdfLUTRTV->Release();
-	//brdfLUTSRV->Release();
 
 	rasterizer->Release();
 
@@ -155,7 +154,14 @@ Game::~Game()
 	skySRV->Release();
 	skyIR->Release();
 
-
+//#ifdef _DEBUG
+//	ID3D11Debug* DebugDevice = nullptr;
+//	HRESULT Result = device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&DebugDevice));
+//
+//	Result = DebugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//
+//	DebugDevice->Release();
+//#endif
 }
 
 
@@ -260,15 +266,20 @@ void Game::ShadersInitialize()
 	if (!PrefilterMapPixelShader->LoadShaderFile(L"Debug/PrefilterMapPixelShader.cso"))
 		PrefilterMapPixelShader->LoadShaderFile(L"PrefilterMapPixelShader.cso");
 
-	/*IntegrateBRDFPixelShader = new SimplePixelShader(device, context);
+	IntegrateBRDFPixelShader = new SimplePixelShader(device, context);
 	if (!IntegrateBRDFPixelShader->LoadShaderFile(L"Debug/IntegrateBRDFPixelShader.cso"))
-		IntegrateBRDFPixelShader->LoadShaderFile(L"IntegrateBRDFPixelShader.cso");*/
+		IntegrateBRDFPixelShader->LoadShaderFile(L"IntegrateBRDFPixelShader.cso");
+
+	QuadVertexShader = new SimpleVertexShader(device, context);
+	if (!QuadVertexShader->LoadShaderFile(L"Debug/QuadVertexShader.cso"))
+		QuadVertexShader->LoadShaderFile(L"QuadVertexShader.cso");
 }
 
 void Game::ModelsInitialize()
 {
 	sphereMesh = new Mesh("Models/sphere.obj", device);
 	cubeMesh = new Mesh("Models/cube.obj", device);
+	quadMesh = new Mesh("Models/quad.obj", device);
 }
 
 void Game::LoadTextures()
@@ -379,6 +390,7 @@ void Game::MaterialsInitialize()
 void Game::GameEntityInitialize()
 {
 	skyBoxEntity = new GameEntity(cubeMesh, materialSkyBox);
+	quadEntity = new GameEntity(cubeMesh);
 
 	pbrSphere = new GameEntity(sphereMesh, materialAluminiumInsulator);
 	pbrSphere->SetPosition(2.0f, 3.0f, -7.0f);
@@ -450,11 +462,11 @@ void Game::IBLStuff()
 
 	D3D11_TEXTURE2D_DESC skyIBLDesc;
 	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
-	skyIBLDesc.Width = 512;
-	skyIBLDesc.Height = 512;
-	skyIBLDesc.MipLevels = 0;
+	skyIBLDesc.Width = 64;
+	skyIBLDesc.Height = 64;
+	skyIBLDesc.MipLevels = 1;
 	skyIBLDesc.ArraySize = 6;
-	skyIBLDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	skyIBLDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	skyIBLDesc.Usage = D3D11_USAGE_DEFAULT;
 	skyIBLDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	skyIBLDesc.CPUAccessFlags = 0;
@@ -462,6 +474,8 @@ void Game::IBLStuff()
 	skyIBLDesc.SampleDesc.Count = 1;
 	skyIBLDesc.SampleDesc.Quality = 0;
 	//---
+	ID3D11RenderTargetView* skyIBLRTV[6];
+	//--
 	D3D11_RENDER_TARGET_VIEW_DESC skyIBLRTVDesc;
 	ZeroMemory(&skyIBLRTVDesc, sizeof(skyIBLRTVDesc));
 	skyIBLRTVDesc.Format = skyIBLDesc.Format;
@@ -477,8 +491,8 @@ void Game::IBLStuff()
 	skyIBLSRVDesc.TextureCube.MipLevels = 1;
 	//---
 	D3D11_VIEWPORT skyIBLviewport;
-	skyIBLviewport.Width = 512;
-	skyIBLviewport.Height = 512;
+	skyIBLviewport.Width = 64;
+	skyIBLviewport.Height = 64;
 	skyIBLviewport.MinDepth = 0.0f;
 	skyIBLviewport.MaxDepth = 1.0f;
 	skyIBLviewport.TopLeftX = 0.0f;
@@ -486,22 +500,8 @@ void Game::IBLStuff()
 	//---
 	
 	device->CreateTexture2D(&skyIBLDesc, 0, &skyIBLtex);
-	
-
-	/*for (int i = 0; i < 6; i++) {
-		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
-		device->CreateRenderTargetView(skyIBLtex, &skyIBLRTVDesc, &skyIBLRTV[i]);
-
-		envMapRTVDesc.Texture2DArray.FirstArraySlice = i;
-		device->CreateRenderTargetView(envMaptex, &envMapRTVDesc, &envMapRTV[i]);
-	}*/
-
 	device->CreateShaderResourceView(skyIBLtex, &skyIBLSRVDesc, &skyIBLSRV);
-
-
-	
-	
-
+	//context->GenerateMips(skyIBLSRV);
 	for (int i = 0; i < 6; i++) {
 		skyIBLRTVDesc.Texture2DArray.FirstArraySlice = i;
 		device->CreateRenderTargetView(skyIBLtex, &skyIBLRTVDesc, &skyIBLRTV[i]);
@@ -542,21 +542,27 @@ void Game::IBLStuff()
 		context->DrawIndexed(cubeMesh->GetIndexCount(), 0, 0);
 
 		// Reset the render states we've changed
-		context->RSSetState(0);
-		context->OMSetDepthStencilState(0, 0);
+		//context->RSSetState(0);
+		//context->OMSetDepthStencilState(0, 0);
+		
 	}
+
+	for (int i = 0; i < 6; i++) {
+		skyIBLRTV[i]->Release();
+	}
+
 #pragma endregion
 
 #pragma region Prefilter EnvMap
 	// PREFILTER ENVIRONMENT MAP
-	
+	unsigned int maxMipLevels = 5;
 	D3D11_TEXTURE2D_DESC envMapDesc;
 	//ZeroMemory(&skyIBLDesc, sizeof(skyIBLDesc));
-	envMapDesc.Width = 512;
-	envMapDesc.Height = 512;
-	envMapDesc.MipLevels = 0;
+	envMapDesc.Width = 256;
+	envMapDesc.Height = 256;
+	envMapDesc.MipLevels = maxMipLevels;
 	envMapDesc.ArraySize = 6;
-	envMapDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	envMapDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	envMapDesc.Usage = D3D11_USAGE_DEFAULT;
 	envMapDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	envMapDesc.CPUAccessFlags = 0;
@@ -564,91 +570,91 @@ void Game::IBLStuff()
 	envMapDesc.SampleDesc.Count = 1;
 	envMapDesc.SampleDesc.Quality = 0;
 	//---
-	D3D11_RENDER_TARGET_VIEW_DESC envMapRTVDesc;
-	ZeroMemory(&envMapRTVDesc, sizeof(envMapRTVDesc));
-	envMapRTVDesc.Format = skyIBLDesc.Format;
-	envMapRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-	envMapRTVDesc.Texture2DArray.ArraySize = 1;
-	envMapRTVDesc.Texture2DArray.MipSlice = 0;
-	//---
 	D3D11_SHADER_RESOURCE_VIEW_DESC envMapSRVDesc;
 	ZeroMemory(&envMapSRVDesc, sizeof(envMapSRVDesc));
 	envMapSRVDesc.Format = skyIBLDesc.Format;
 	envMapSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
 	envMapSRVDesc.TextureCube.MostDetailedMip = 0;
-	envMapSRVDesc.TextureCube.MipLevels = 5;
-	//---
-	D3D11_VIEWPORT envMapviewport;
-	envMapviewport.Width = 512;
-	envMapviewport.Height = 512;
-	envMapviewport.MinDepth = 0.0f;
-	envMapviewport.MaxDepth = 1.0f;
-	envMapviewport.TopLeftX = 0.0f;
-	envMapviewport.TopLeftY = 0.0f;
+	envMapSRVDesc.TextureCube.MipLevels = maxMipLevels;
+	//--
+	ID3D11RenderTargetView* envMapRTV[6];
 	//---
 	device->CreateTexture2D(&envMapDesc, 0, &envMaptex);
 	device->CreateShaderResourceView(envMaptex, &envMapSRVDesc, &envMapSRV);
+	for (int mip = 0; mip < maxMipLevels; mip++) {
+	
+		D3D11_RENDER_TARGET_VIEW_DESC envMapRTVDesc;
+		ZeroMemory(&envMapRTVDesc, sizeof(envMapRTVDesc));
+		envMapRTVDesc.Format = skyIBLDesc.Format;
+		envMapRTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+		envMapRTVDesc.Texture2DArray.ArraySize = 1;
+		envMapRTVDesc.Texture2DArray.MipSlice = mip;
 
-	// CREATE MULTIPLE RTVs
-	/*unsigned int maxMipLevels = envMapSRVDesc.TextureCube.MipLevels;
-	for (unsigned int mip = 0; mip < 1; mip++) {
-		unsigned mipWidth = 512 * pow(0.5, mip);
-		unsigned mipHeight = 512 * pow(0.5, mip);
+		unsigned mipWidth = 256 * pow(0.5, mip);
+		unsigned mipHeight = 256 * pow(0.5, mip);
 
+		D3D11_VIEWPORT envMapviewport;
 		envMapviewport.Width = mipWidth;
-		envMapviewport.Height = mipHeight;*/
-		//envMapRTVDesc.Texture2DArray.MipSlice = mip;
+		envMapviewport.Height = mipHeight;
+		envMapviewport.MinDepth = 0.0f;
+		envMapviewport.MaxDepth = 1.0f;
+		envMapviewport.TopLeftX = 0.0f;
+		envMapviewport.TopLeftY = 0.0f;
+		
 
-		//float roughness = (float)mip / (float)(maxMipLevels - 1);
-	float roughness = 0.0;
-	for (int i = 0; i < 6; i++) {
-		envMapRTVDesc.Texture2DArray.FirstArraySlice = i;
-		device->CreateRenderTargetView(envMaptex, &envMapRTVDesc, &envMapRTV[i]);
+		float roughness = (float)mip / (float)(maxMipLevels - 1);
+		//float roughness = 0.0;
+		for (int i = 0; i < 6; i++) {
+			envMapRTVDesc.Texture2DArray.FirstArraySlice = i;
+			device->CreateRenderTargetView(envMaptex, &envMapRTVDesc, &envMapRTV[i]);
 
-		//-- Cam directions
-		XMVECTOR dir = XMVector3Rotate(tar[i], XMQuaternionIdentity());
-		XMMATRIX view = DirectX::XMMatrixLookToLH(XMLoadFloat3(&position), dir, up[i]);
-		XMStoreFloat4x4(&camViewMatrix, DirectX::XMMatrixTranspose(view));
+			//-- Cam directions
+			XMVECTOR dir = XMVector3Rotate(tar[i], XMQuaternionIdentity());
+			XMMATRIX view = DirectX::XMMatrixLookToLH(XMLoadFloat3(&position), dir, up[i]);
+			XMStoreFloat4x4(&camViewMatrix, DirectX::XMMatrixTranspose(view));
 
-		XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);
-		XMStoreFloat4x4(&camProjMatrix, DirectX::XMMatrixTranspose(P));
-		//---
-		context->OMSetRenderTargets(1, &envMapRTV[i], 0);
-		context->RSSetViewports(1, &envMapviewport);
-		context->ClearRenderTargetView(envMapRTV[i], color);
-		//---
+			XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(0.5f * XM_PI, 1.0f, 0.1f, 100.0f);
+			XMStoreFloat4x4(&camProjMatrix, DirectX::XMMatrixTranspose(P));
+			//---
+			context->OMSetRenderTargets(1, &envMapRTV[i], 0);
+			context->RSSetViewports(1, &envMapviewport);
+			context->ClearRenderTargetView(envMapRTV[i], color);
+			//---
 
-		vertexBuffer = cubeMesh->GetVertexBuffer();
-		indexBuffer = cubeMesh->GetIndexBuffer();
+			vertexBuffer = cubeMesh->GetVertexBuffer();
+			indexBuffer = cubeMesh->GetIndexBuffer();
 
-		skyVertexShader->SetMatrix4x4("view", camViewMatrix);
-		skyVertexShader->SetMatrix4x4("projection", camProjMatrix);
+			skyVertexShader->SetMatrix4x4("view", camViewMatrix);
+			skyVertexShader->SetMatrix4x4("projection", camProjMatrix);
 
-		skyVertexShader->CopyAllBufferData();
-		skyVertexShader->SetShader();
+			skyVertexShader->CopyAllBufferData();
+			skyVertexShader->SetShader();
 
-		PrefilterMapPixelShader->SetShaderResourceView("EnvMap", skySRV);
-		PrefilterMapPixelShader->SetSamplerState("basicSampler", sampler);
-		PrefilterMapPixelShader->SetFloat("roughness", roughness);
+			PrefilterMapPixelShader->SetShaderResourceView("EnvMap", skySRV);
+			PrefilterMapPixelShader->SetSamplerState("basicSampler", sampler);
+			PrefilterMapPixelShader->SetFloat("roughness", roughness);
 
-		PrefilterMapPixelShader->CopyAllBufferData();
-		PrefilterMapPixelShader->SetShader();
+			PrefilterMapPixelShader->CopyAllBufferData();
+			PrefilterMapPixelShader->SetShader();
 
-		context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-		context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+			context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-		context->RSSetState(skyRasterizerState);
-		context->OMSetDepthStencilState(skyDepthState, 0);
+			context->RSSetState(skyRasterizerState);
+			context->OMSetDepthStencilState(skyDepthState, 0);
 
-		context->DrawIndexed(cubeMesh->GetIndexCount(), 0, 0);
+			context->DrawIndexed(cubeMesh->GetIndexCount(), 0, 0);
 
-		// Reset the render states we've changed
-		context->RSSetState(0);
-		context->OMSetDepthStencilState(0, 0);
+			// Reset the render states we've changed
+			//context->RSSetState(0);
+			//context->OMSetDepthStencilState(0, 0);
 
+		}
+		for (int i = 0; i < 6; i++) {
+			envMapRTV[i]->Release();
+		}
+	
 	}
-	context->GenerateMips(envMapSRV);
-	//}
 #pragma endregion
 
 #pragma region Integrate BRDF LUT
@@ -668,6 +674,8 @@ void Game::IBLStuff()
 	brdfLUTDesc.SampleDesc.Count = 1;
 	brdfLUTDesc.SampleDesc.Quality = 0;
 	//---
+	ID3D11RenderTargetView* brdfLUTRTV;
+	//--
 	D3D11_RENDER_TARGET_VIEW_DESC brdfLUTRTVDesc;
 	ZeroMemory(&brdfLUTRTVDesc, sizeof(brdfLUTRTVDesc));
 	brdfLUTRTVDesc.Format = brdfLUTDesc.Format;
@@ -680,9 +688,54 @@ void Game::IBLStuff()
 	brdfLUTSRVDesc.TextureCube.MostDetailedMip = 0;
 	brdfLUTSRVDesc.TextureCube.MipLevels = 1;
 	//---
+	D3D11_VIEWPORT brdfLUTviewport;
+	brdfLUTviewport.Width = 512;
+	brdfLUTviewport.Height = 512;
+	brdfLUTviewport.MinDepth = 0.0f;
+	brdfLUTviewport.MaxDepth = 1.0f;
+	brdfLUTviewport.TopLeftX = 0.0f;
+	brdfLUTviewport.TopLeftY = 0.0f;
+	//---
 	device->CreateTexture2D(&brdfLUTDesc, 0, &brdfLUTtex);
 	device->CreateRenderTargetView(brdfLUTtex, &brdfLUTRTVDesc, &brdfLUTRTV);
-	//device->CreateShaderResourceView(brdfLUTtex, &brdfLUTSRVDesc, &brdfLUTSRV);
+	device->CreateShaderResourceView(brdfLUTtex, &brdfLUTSRVDesc, &brdfLUTSRV);
+
+	context->OMSetRenderTargets(1, &brdfLUTRTV, 0);
+	context->RSSetViewports(1, &brdfLUTviewport);
+	context->ClearRenderTargetView(brdfLUTRTV, color);
+
+	vertexBuffer = quadEntity->GetMesh()->GetVertexBuffer();
+	indexBuffer = quadEntity->GetMesh()->GetIndexBuffer();
+
+	baseVertexShader->SetMatrix4x4("world", *quadEntity->GetWorldMatrix());
+	baseVertexShader->SetMatrix4x4("view", camera->GetView());
+	baseVertexShader->SetMatrix4x4("projection", camera->GetProjection());
+
+	baseVertexShader->CopyAllBufferData();
+	baseVertexShader->SetShader();
+
+	IntegrateBRDFPixelShader->SetShader();
+
+	context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	context->DrawIndexed(quadEntity->GetMesh()->GetIndexCount(), 0, 0);
+
+	/*QuadVertexShader->SetShader();
+	IntegrateBRDFPixelShader->SetShader();
+
+
+	ID3D11Buffer* nothing = 0;
+	context->IASetVertexBuffers(0, 1, &nothing, &stride, &offset);
+	context->IASetIndexBuffer(0, DXGI_FORMAT_R32_UINT, 0);
+
+	context->Draw(3, 0);*/
+
+	brdfLUTRTV->Release();
+
+	//---JANKY CHEESE---
+	//CreateWICTextureFromFile(device, context, L"Textures/ibl_brdf_lut.png", 0, &brdfLUTSRV);
+	//---END CHEESE----
 #pragma endregion
 }
 
@@ -750,60 +803,27 @@ void Game::Draw(float deltaTime, float totalTime)
 		for (size_t j = 0; j < 6; j++)
 		{
 
-			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r, skyIBLSRV, sampler);
+			render.PBRRenderProcess(pbrSpheres[i][j], vertexBuffer, indexBuffer, PBRVertexShader, PBRPixelShader, camera, context, m, r, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
 
 			m += 0.2f;
 		}
 		r += 0.2f;
 	}
 	
-	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
-	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere1, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere2, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere3, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere4, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere5, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere6, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere7, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere8, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
+	render.PBRMatRenderProcess(pbrSphere9, vertexBuffer, indexBuffer, PBRVertexShader, PBRMatPixelShader, camera, context, skyIBLSRV, envMapSRV, brdfLUTSRV, sampler);
 
-	//vertexBuffer = pbrSphere->GetMesh()->GetVertexBuffer();
-	//indexBuffer = pbrSphere->GetMesh()->GetIndexBuffer();
+	
 
-	//PBRVertexShader->SetMatrix4x4("world", *pbrSphere->GetWorldMatrix());
-	//PBRVertexShader->SetMatrix4x4("view", camera->GetView());
-	//PBRVertexShader->SetMatrix4x4("projection", camera->GetProjection());
-
-	//PBRVertexShader->CopyAllBufferData();
-	//PBRVertexShader->SetShader();
-
-	//PBRMatPixelShader->SetShaderResourceView("albedoSRV", pbrSphere->GetMaterial()->GetAlbedoSRV());
-	//PBRMatPixelShader->SetShaderResourceView("normalSRV", pbrSphere->GetMaterial()->GetNormalSRV());
-	//PBRMatPixelShader->SetShaderResourceView("metallicSRV", pbrSphere->GetMaterial()->GetMetallicSRV());
-	//PBRMatPixelShader->SetShaderResourceView("roughSRV", pbrSphere->GetMaterial()->GetRoughSRV());
-
-	//PBRMatPixelShader->SetSamplerState("basicSampler", pbrSphere->GetMaterial()->GetMaterialSampler());
-	//PBRMatPixelShader->SetFloat("ao", 1.0f);
-
-	//PBRMatPixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
-	//PBRMatPixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
-	//PBRMatPixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
-	//PBRMatPixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
-	////PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
-	//PBRMatPixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
-
-	//PBRMatPixelShader->SetFloat3("camPos", camera->GetPosition());
-
-	//PBRMatPixelShader->CopyAllBufferData();
-	//PBRMatPixelShader->SetShader();
-
-	//context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-	//context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-	//context->DrawIndexed(pbrSphere->GetMesh()->GetIndexCount(), 0, 0);
-
-	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, envMapSRV);
+	render.RenderSkyBox(cubeMesh, vertexBuffer, indexBuffer, skyVertexShader, skyPixelShader, camera, context, skyRasterizerState, skyDepthState, skySRV);
 
 	swapChain->Present(0, 0);
 }

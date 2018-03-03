@@ -56,7 +56,7 @@ DXCore::DXCore(
 	swapChain = 0;
 	backBufferRTV = 0;
 	depthStencilView = 0;
-
+	
 	// Query performance counter for accurate timing information
 	__int64 perfFreq;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&perfFreq);
@@ -75,6 +75,15 @@ DXCore::~DXCore()
 	if (swapChain) { swapChain->Release(); }
 	if (context) { context->Release(); }
 	if (device) { device->Release(); }
+
+//#ifdef _DEBUG
+//	ID3D11Debug* DebugDevice = nullptr;
+//	HRESULT Result = device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&DebugDevice));
+//	
+//	Result = DebugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+//	
+//	DebugDevice->Release();
+//#endif
 }
 
 // --------------------------------------------------------

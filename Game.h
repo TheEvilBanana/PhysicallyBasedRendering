@@ -61,18 +61,19 @@ private:
 	SimplePixelShader* ConvolutionPixelShader;
 	SimplePixelShader* PrefilterMapPixelShader;
 	SimplePixelShader* IntegrateBRDFPixelShader;
+	SimpleVertexShader* QuadVertexShader;
 
 	//IBL
 	ID3D11Texture2D* skyIBLtex;
-	ID3D11RenderTargetView* skyIBLRTV[6];
+	//ID3D11RenderTargetView* skyIBLRTV[6];
 	ID3D11ShaderResourceView* skyIBLSRV;
 	
 	ID3D11Texture2D* envMaptex;
-	ID3D11RenderTargetView* envMapRTV[6];
+	//ID3D11RenderTargetView* envMapRTV[6];
 	ID3D11ShaderResourceView* envMapSRV;
 
 	ID3D11Texture2D* brdfLUTtex;
-	ID3D11RenderTargetView* brdfLUTRTV;
+	//ID3D11RenderTargetView* brdfLUTRTV;
 	ID3D11ShaderResourceView* brdfLUTSRV;
 
 	// Sampler for wrapping textures
@@ -139,6 +140,7 @@ private:
 	//Mesh Class
 	Mesh* sphereMesh;
 	Mesh* cubeMesh;
+	Mesh* quadMesh;
 
 	//Material Class
 	Material* materialSkyBox;
@@ -155,6 +157,7 @@ private:
 
 	//Game Entity Class
 	GameEntity* skyBoxEntity;
+	GameEntity* quadEntity;
 	std::vector<GameEntity*> sphereEntities;
 	std::vector<GameEntity*> flatEntities;
 	GameEntity* pbrSphere;

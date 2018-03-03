@@ -2,12 +2,15 @@
 
 
 
-Texture2D albedoSRV : register(t0);
-Texture2D normalSRV : register(t1);
-Texture2D metallicSRV : register(t2);
-Texture2D roughSRV : register(t3);
+TextureCube skyIR			: register(t0);
+TextureCube skyPrefilter	: register(t1);
+Texture2D brdfLUT			: register(t2);
 
-TextureCube skyIR			: register(t4);
+Texture2D albedoSRV : register(t3);
+Texture2D normalSRV : register(t4);
+Texture2D metallicSRV : register(t5);
+Texture2D roughSRV : register(t6);
+
 SamplerState basicSampler	: register(s0);
 
 cbuffer ExternalData : register(b0) {
@@ -86,6 +89,8 @@ float4 main(VertexToPixel input) : SV_TARGET
 	
 	float3 viewDir = normalize(camPos - input.worldPos);
 	
+	float3 R = reflect(-viewDir, normalVec);
+
 	float3 F0 = float3(0.04f, 0.04f, 0.04f);
 	F0 = lerp(F0, albedo, metallic);
 
@@ -105,11 +110,19 @@ float4 main(VertexToPixel input) : SV_TARGET
 	CalcRadiance(input, viewDir, normalVec, albedo, rough, metallic, lightPos4, lightCol, F0, rad);
 	Lo += rad;
 
-	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
 	float3 kS = FresnelSchlickRoughness(max(dot(normalVec, viewDir), 0.0f), F0, rough);
 	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
+	kD *= 1.0 - metallic;
+
+	float3 irradiance = skyIR.Sample(basicSampler, normalVec).rgb;
 	float3 diffuse = albedo * irradiance;
-	float3 ambient = (kD * diffuse) * ao;
+
+	const float MAX_REF_LOD = 4.0f;
+	float3 prefilteredColor = skyPrefilter.SampleLevel(basicSampler, R, rough * MAX_REF_LOD).rgb;
+	float2 brdf = brdfLUT.Sample(basicSampler, float2(max(dot(normalVec, viewDir), 0.0f), rough)).rg;
+	float3 specular = prefilteredColor * (kS * brdf.x + brdf.y);
+
+	float3 ambient = (kD * diffuse + specular) * ao;
 	float3 color = ambient + Lo;
 
 
