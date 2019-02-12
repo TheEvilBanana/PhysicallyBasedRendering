@@ -29,7 +29,7 @@ void CalcRadiance(VertexToPixel input, float3 viewDir, float3 normalVec, float3 
 	float3 lightDir = normalize(lightPos - input.worldPos);
 	float3 halfwayVec = normalize(viewDir + lightDir);
 	float distance = length(lightPos - input.worldPos);
-	float attenuation = 1.0f / (distance * distance);
+	float attenuation = 1.0f / dot(float3(1.0f, 0.0f, 1.0f), float3(1.0f, distance, distance*distance));
 	float3 radiance = lightCol * attenuation;
 
 	//Cook-Torrance BRDF
@@ -39,7 +39,7 @@ void CalcRadiance(VertexToPixel input, float3 viewDir, float3 normalVec, float3 
 
 	float3 kS = F;
 	float3 kD = float3(1.0f, 1.0f, 1.0f) - kS;
-	kD *= 1.0 - metallic;
+	kD *= (1.0 - metallic);
 
 	float3 nom = D * G * F;
 	float denom = 4 * max(dot(normalVec, viewDir), 0.0f) * max(dot(normalVec, lightDir), 0.0) + 0.001f; // 0.001f just in case product is 0

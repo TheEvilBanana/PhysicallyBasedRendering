@@ -3,6 +3,9 @@
 #include "WICTextureLoader.h"
 #include "DDSTextureLoader.h"
 
+#include<chrono>
+#include<iostream>
+
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
 
@@ -393,34 +396,34 @@ void Game::GameEntityInitialize()
 	quadEntity = new GameEntity(cubeMesh);
 
 	pbrSphere = new GameEntity(sphereMesh, materialAluminiumInsulator);
-	pbrSphere->SetPosition(2.0f, 3.0f, -7.0f);
+	pbrSphere->SetPosition(2.0f, 3.0f, 0.0f);
 
 	pbrSphere1 = new GameEntity(sphereMesh, materialGold);
-	pbrSphere1->SetPosition(2.0f, 2.0f, -7.0f);
+	pbrSphere1->SetPosition(2.0f, 2.0f, 0.0f);
 
 	pbrSphere2 = new GameEntity(sphereMesh, materialGunMetal);
-	pbrSphere2->SetPosition(2.0f, 1.0f, -7.0f);
+	pbrSphere2->SetPosition(2.0f, 1.0f, 0.0f);
 
 	pbrSphere3 = new GameEntity(sphereMesh, materialLeather);
-	pbrSphere3->SetPosition(2.0f, 0.0f, -7.0f);
+	pbrSphere3->SetPosition(2.0f, 0.0f, 0.0f);
 
 	pbrSphere4 = new GameEntity(sphereMesh, materialSuperHeroFabric);
-	pbrSphere4->SetPosition(2.0f, -1.0f, -7.0f);
+	pbrSphere4->SetPosition(2.0f, -1.0f, 0.0f);
 
 	pbrSphere5 = new GameEntity(sphereMesh, materialCamoFabric);
-	pbrSphere5->SetPosition(3.0f, 3.0f, -7.0f);
+	pbrSphere5->SetPosition(3.0f, 3.0f, 0.0f);
 
 	pbrSphere6 = new GameEntity(sphereMesh, materialGlassVisor);
-	pbrSphere6->SetPosition(3.0f, 2.0f, -7.0f);
+	pbrSphere6->SetPosition(3.0f, 2.0f, 0.0f);
 
 	pbrSphere7 = new GameEntity(sphereMesh, materialIronOld);
-	pbrSphere7->SetPosition(3.0f, 1.0f, -7.0f);
+	pbrSphere7->SetPosition(3.0f, 1.0f, 0.0f);
 
 	pbrSphere8 = new GameEntity(sphereMesh, materialRubber);
-	pbrSphere8->SetPosition(3.0f, 0.0f, -7.0f);
+	pbrSphere8->SetPosition(3.0f, 0.0f, 0.0f);
 
 	pbrSphere9 = new GameEntity(sphereMesh, materialWood);
-	pbrSphere9->SetPosition(3.0f, -1.0f, -7.0f);
+	pbrSphere9->SetPosition(3.0f, -1.0f, 0.0f);
 
 	for (size_t i = 0; i < 6; i++)
 		for (size_t j = 0; j < 6; j++)
@@ -447,6 +450,32 @@ void Game::GameEntityInitialize()
 
 void Game::IBLStuff()
 {
+	/*__int64 perfFreq;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&perfFreq);
+	double perfCounterSeconds = 1.0 / (double)perfFreq;
+
+	__int64 start;
+	QueryPerformanceCounter((LARGE_INTEGER*)&start);*/
+	/*ID3D11Query * start;
+	ID3D11Query * stop;
+	ID3D11Query * disjoint;
+
+	D3D11_QUERY_DESC timestamp_query_desc;
+	timestamp_query_desc.Query = D3D11_QUERY_TIMESTAMP;
+	timestamp_query_desc.MiscFlags = 0;
+
+	D3D11_QUERY_DESC disjoint_query_desc;
+	disjoint_query_desc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
+	disjoint_query_desc.MiscFlags = 0;
+
+	device->CreateQuery(&timestamp_query_desc, &start);
+	device->CreateQuery(&timestamp_query_desc, &stop);
+	device->CreateQuery(&disjoint_query_desc, &disjoint);
+
+	context->Begin(disjoint);
+	context->End(start);*/
+	auto start = std::chrono::high_resolution_clock::now();
+
 	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
 	XMFLOAT4X4 camViewMatrix;
 	XMFLOAT4X4 camProjMatrix;
@@ -546,7 +575,7 @@ void Game::IBLStuff()
 		//context->OMSetDepthStencilState(0, 0);
 		
 	}
-
+	
 	for (int i = 0; i < 6; i++) {
 		skyIBLRTV[i]->Release();
 	}
@@ -737,6 +766,43 @@ void Game::IBLStuff()
 	//CreateWICTextureFromFile(device, context, L"Textures/ibl_brdf_lut.png", 0, &brdfLUTSRV);
 	//---END CHEESE----
 #pragma endregion
+
+	auto stop = std::chrono::high_resolution_clock::now();
+
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	//printf("\n %f", (float)diff.count());
+	std::cout << "\n" << diff.count();
+	/*__int64 stop;
+	QueryPerformanceCounter((LARGE_INTEGER*)&stop);
+
+	float totalTime = (float)((stop - start) * perfCounterSeconds);
+	printf("%f", totalTime);*/
+
+	//context->End(stop);
+	//context->End(disjoint);
+
+	//while (context->GetData(disjoint, NULL, 0, 0) == S_FALSE)
+	//{
+	//	Sleep(1);       // Wait a bit, but give other threads a chance to run
+	//}
+	//D3D11_QUERY_DATA_TIMESTAMP_DISJOINT tsDisjoint;
+	//context->GetData(disjoint, &tsDisjoint, sizeof(tsDisjoint), 0);
+	//if (tsDisjoint.Disjoint)
+	//{
+	//	return;
+	//}
+
+	//UINT64 tsStart, tsStop;
+	//context->GetData(start, &tsStart, sizeof(UINT64), 0);
+	//context->GetData(stop, &tsStop, sizeof(UINT64), 0);
+
+	//float timestamp = float(tsStart - tsStop) /
+	//	float(tsDisjoint.Frequency) * 1000.0f;
+	//
+	//start->Release();
+	//stop->Release();
+	//disjoint->Release();
+	//printf("\n %f", timestamp);
 }
 
 void Game::OnResize()

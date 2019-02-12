@@ -66,14 +66,14 @@ void Render::PBRRenderProcess(GameEntity *& gameEntity, ID3D11Buffer *& vertexBu
 
 	pixelShader->SetSamplerState("basicSampler", sampler);
 
-	pixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 0.0f, 0.0f));
+	pixelShader->SetFloat3("albedo", XMFLOAT3(1.0f, 1.0f, 1.0f));
 	pixelShader->SetFloat("metallic", m);
 	pixelShader->SetFloat("roughness", r);
 	pixelShader->SetFloat("ao", 1.0f);
 
-	pixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -10.0f));
-	pixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -10.0f));
-	pixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, -10.0f));
+	pixelShader->SetFloat3("lightPos1", XMFLOAT3(10.0f, 10.0f, -5.0f));
+	pixelShader->SetFloat3("lightPos2", XMFLOAT3(10.0f, -10.0f, -2.0f));
+	pixelShader->SetFloat3("lightPos3", XMFLOAT3(-10.0f, -10.0f, 7.0f));
 	pixelShader->SetFloat3("lightPos4", XMFLOAT3(-10.0f, 10.0f, -10.0f));
 	//PBRPixelShader->SetData("lightPos", &lightPos, sizeof(lightPos));
 	pixelShader->SetFloat3("lightCol", XMFLOAT3(300.0f, 300.0f, 300.0f));
